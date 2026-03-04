@@ -42,7 +42,7 @@ export default function Group() {
             aria-pressed={user.id === activeUserId}
           >
             <div className="member-avatar" aria-hidden="true">
-              {user.name.charAt(0).toUpperCase()}
+              {user.emoji}
             </div>
             <div className="member-info">
               <span className="member-name">{user.name}</span>

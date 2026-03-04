@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAppStore, selectActiveUser } from '@/store/useAppStore'
-import type { WeightUnit } from '@/types'
+import { AVAILABLE_EMOJIS } from '@/types'
+import type { WeightUnit, UserEmoji } from '@/types'
 
 export default function Profile() {
   const users = useAppStore((s) => s.users)
@@ -13,27 +14,34 @@ export default function Profile() {
 
   const [showAddForm, setShowAddForm] = useState(false)
 
+  if (!activeUser) {
+    return (
+      <div className="page page--centered">
+        <p className="empty-state">No profile selected.</p>
+      </div>
+    )
+  }
+
   return (
     <div className="page">
       <header className="page-header">
         <h1 className="page-title">Profile</h1>
+        <span className="page-subtitle">{activeUser.emoji} {activeUser.name}</span>
       </header>
 
-      {/* ── Active user edit ── */}
-      {activeUser && (
-        <section className="section">
-          <h2 className="section-title">Your Profile</h2>
-          <EditUserForm
-            user={activeUser}
-            onSave={(patch) => updateUser(activeUser.id, patch)}
-          />
-        </section>
-      )}
+      {/* ── Edit active profile ── */}
+      <section className="section">
+        <div className="section-title">Your profile</div>
+        <EditUserForm
+          user={activeUser}
+          onSave={(patch) => updateUser(activeUser.id, patch)}
+        />
+      </section>
 
-      {/* ── Other members ── */}
+      {/* ── Switch / remove members ── */}
       {users.length > 1 && (
         <section className="section">
-          <h2 className="section-title">Members</h2>
+          <div className="section-title">Members</div>
           <ul className="user-list">
             {users.map((u) => (
               <li key={u.id} className="user-row">
@@ -41,6 +49,7 @@ export default function Profile() {
                   className={`user-row__name ${u.id === activeUserId ? 'user-row__name--active' : ''}`}
                   onClick={() => setActiveUser(u.id)}
                 >
+                  <span>{u.emoji}</span>
                   {u.name}
                   {u.id === activeUserId && <span className="badge">Active</span>}
                 </button>
@@ -66,10 +75,11 @@ export default function Profile() {
       <section className="section">
         {showAddForm ? (
           <>
-            <h2 className="section-title">Add Member</h2>
+            <div className="section-title">Add member</div>
             <AddUserForm
-              onSave={(name, unit, start, goal) => {
-                addUser(name, unit, start, goal)
+              usedEmojis={new Set(users.map((u) => u.emoji))}
+              onSave={(name, emoji, unit) => {
+                addUser(name, emoji, unit)
                 setShowAddForm(false)
               }}
               onCancel={() => setShowAddForm(false)}
@@ -96,18 +106,11 @@ function EditUserForm({
 }) {
   const [name, setName] = useState(user.name)
   const [unit, setUnit] = useState<WeightUnit>(user.unit)
-  const [startW, setStartW] = useState(user.startingWeight?.toString() ?? '')
-  const [goalW, setGoalW] = useState(user.goalWeight?.toString() ?? '')
   const [saved, setSaved] = useState(false)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    onSave({
-      name: name.trim() || user.name,
-      unit,
-      startingWeight: parseFloat(startW) || null,
-      goalWeight: parseFloat(goalW) || null,
-    })
+    onSave({ name: name.trim() || user.name, unit })
     setSaved(true)
     setTimeout(() => setSaved(false), 1500)
   }
@@ -115,7 +118,7 @@ function EditUserForm({
   return (
     <form className="form" onSubmit={handleSubmit}>
       <div className="form-group">
-        <label htmlFor="edit-name" className="form-label">Name</label>
+        <label htmlFor="edit-name" className="form-label">Display name</label>
         <input
           id="edit-name"
           type="text"
@@ -128,7 +131,7 @@ function EditUserForm({
       </div>
 
       <div className="form-group">
-        <label className="form-label">Unit</label>
+        <label className="form-label">Weight unit</label>
         <div className="segmented">
           {(['lbs', 'kg'] as WeightUnit[]).map((u) => (
             <button
@@ -140,35 +143,6 @@ function EditUserForm({
               {u}
             </button>
           ))}
-        </div>
-      </div>
-
-      <div className="form-row">
-        <div className="form-group">
-          <label htmlFor="edit-start" className="form-label">Starting weight</label>
-          <input
-            id="edit-start"
-            type="number"
-            inputMode="decimal"
-            step="0.1"
-            placeholder={unit === 'lbs' ? '200' : '90'}
-            value={startW}
-            onChange={(e) => setStartW(e.target.value)}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="edit-goal" className="form-label">Goal weight</label>
-          <input
-            id="edit-goal"
-            type="number"
-            inputMode="decimal"
-            step="0.1"
-            placeholder={unit === 'lbs' ? '170' : '77'}
-            value={goalW}
-            onChange={(e) => setGoalW(e.target.value)}
-            className="form-input"
-          />
         </div>
       </div>
 
@@ -182,41 +156,52 @@ function EditUserForm({
 // ─── Add new user ─────────────────────────────────────────────────────────────
 
 function AddUserForm({
+  usedEmojis,
   onSave,
   onCancel,
 }: {
-  onSave: (name: string, unit: WeightUnit, start?: number, goal?: number) => void
+  usedEmojis: Set<string>
+  onSave: (name: string, emoji: UserEmoji, unit: WeightUnit) => void
   onCancel: () => void
 }) {
+  const available = AVAILABLE_EMOJIS.filter((e) => !usedEmojis.has(e))
   const [name, setName] = useState('')
+  const [emoji, setEmoji] = useState<UserEmoji | null>(available[0] ?? null)
   const [unit, setUnit] = useState<WeightUnit>('lbs')
-  const [startW, setStartW] = useState('')
-  const [goalW, setGoalW] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim()) {
-      setError('Name is required.')
-      return
-    }
-    onSave(
-      name.trim(),
-      unit,
-      parseFloat(startW) || undefined,
-      parseFloat(goalW) || undefined,
-    )
+    if (!name.trim()) { setError('Name is required.'); return }
+    if (!emoji) { setError('No emoji slots available.'); return }
+    onSave(name.trim(), emoji, unit)
   }
 
   return (
     <form className="form" onSubmit={handleSubmit}>
+      <div className="form-group">
+        <label className="form-label">Pick emoji</label>
+        <div className="emoji-grid" style={{ gridTemplateColumns: `repeat(${Math.min(available.length, 6)}, 1fr)` }}>
+          {available.map((e) => (
+            <button
+              key={e}
+              type="button"
+              className={`emoji-opt ${emoji === e ? 'emoji-opt--selected' : ''}`}
+              onClick={() => setEmoji(e)}
+            >
+              {e}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="form-group">
         <label htmlFor="add-name" className="form-label">Name</label>
         <input
           id="add-name"
           type="text"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => { setName(e.target.value); setError(null) }}
           className="form-input"
           placeholder="e.g. Alex"
           maxLength={40}
@@ -226,7 +211,7 @@ function AddUserForm({
       </div>
 
       <div className="form-group">
-        <label className="form-label">Unit</label>
+        <label className="form-label">Weight unit</label>
         <div className="segmented">
           {(['lbs', 'kg'] as WeightUnit[]).map((u) => (
             <button
@@ -241,44 +226,11 @@ function AddUserForm({
         </div>
       </div>
 
-      <div className="form-row">
-        <div className="form-group">
-          <label htmlFor="add-start" className="form-label">Starting weight <span className="form-label__optional">(opt)</span></label>
-          <input
-            id="add-start"
-            type="number"
-            inputMode="decimal"
-            step="0.1"
-            placeholder={unit === 'lbs' ? '200' : '90'}
-            value={startW}
-            onChange={(e) => setStartW(e.target.value)}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="add-goal" className="form-label">Goal weight <span className="form-label__optional">(opt)</span></label>
-          <input
-            id="add-goal"
-            type="number"
-            inputMode="decimal"
-            step="0.1"
-            placeholder={unit === 'lbs' ? '170' : '77'}
-            value={goalW}
-            onChange={(e) => setGoalW(e.target.value)}
-            className="form-input"
-          />
-        </div>
-      </div>
-
-      {error && <p className="form-error" role="alert">{error}</p>}
+      {error && <p className="form-error">{error}</p>}
 
       <div className="form-row form-row--actions">
-        <button type="button" className="btn btn--ghost btn--full" onClick={onCancel}>
-          Cancel
-        </button>
-        <button type="submit" className="btn btn--primary btn--full">
-          Add Member
-        </button>
+        <button type="button" className="btn btn--ghost btn--full" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="btn btn--primary btn--full">Add Member</button>
       </div>
     </form>
   )

@@ -2,9 +2,13 @@
 
 export type WeightUnit = 'lbs' | 'kg'
 
+export const AVAILABLE_EMOJIS = ['🦁', '🐻', '🦊', '🐺', '🦅', '🐸'] as const
+export type UserEmoji = (typeof AVAILABLE_EMOJIS)[number]
+
 export interface User {
   id: string
   name: string
+  emoji: UserEmoji
   unit: WeightUnit
   startingWeight: number | null
   goalWeight: number | null
@@ -30,29 +34,6 @@ export interface WeeklyAverage {
   average: number
   entryCount: number
   delta: number | null  // change vs previous week (null if no prior week)
-}
-
-export interface UserProgress {
-  user: User
-  currentWeekAvg: WeightlyAvg | null
-  previousWeekAvg: WeightlyAvg | null
-  totalLost: number | null
-  weeksActive: number
-  streak: number       // consecutive weeks with at least 1 entry
-}
-
-// Small alias used inside UserProgress to avoid forward-reference issues
-type WeightlyAvg = Omit<WeeklyAverage, 'userId'>
-
-export interface GroupSummary {
-  weekKey: string
-  weekStart: string
-  weekEnd: string
-  members: Array<{
-    user: User
-    average: number | null
-    delta: number | null
-  }>
 }
 
 // ─── Store State Types ───────────────────────────────────────────────────────

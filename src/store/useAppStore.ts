@@ -1,12 +1,13 @@
 import { create } from 'zustand'
 import { storage } from '@/services/storage'
-import type { User, WeightEntry, AppState } from '@/types'
+import type { User, WeightEntry, AppState, UserEmoji } from '@/types'
 import { generateId } from '@/utils/id'
 
 interface AppActions {
   // User actions
-  addUser: (name: string, unit: User['unit'], startingWeight?: number, goalWeight?: number) => User
+  addUser: (name: string, emoji: UserEmoji, unit: User['unit'], startingWeight?: number, goalWeight?: number) => User
   updateUser: (id: string, patch: Partial<Omit<User, 'id' | 'createdAt'>>) => void
+  updateEntry: (id: string, weight: number, note?: string) => void
   removeUser: (id: string) => void
   setActiveUser: (id: string | null) => void
 
@@ -36,10 +37,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   // ── User actions ──────────────────────────────────────────────────────────
-  addUser: (name, unit, startingWeight, goalWeight) => {
+  addUser: (name, emoji, unit, startingWeight, goalWeight) => {
     const user: User = {
       id: generateId(),
       name: name.trim(),
+      emoji,
       unit,
       startingWeight: startingWeight ?? null,
       goalWeight: goalWeight ?? null,
@@ -98,6 +100,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
     return entry
   },
 
+  updateEntry: (id, weight, note) => {
+    const entries = get().entries.map((e) =>
+      e.id === id ? { ...e, weight, note: note?.trim() ?? e.note } : e,
+    )
+    set({ entries })
+    storage.saveEntries(entries)
+  },
+
   removeEntry: (id) => {
     const entries = get().entries.filter((e) => e.id !== id)
     set({ entries })
@@ -105,12 +115,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 }))
 
-// ── Selectors (memoized outside the store to keep renders efficient) ─────────
+// ── Selectors ─────────────────────────────────────────────────────────────────
 
 export const selectActiveUser = (s: AppStore) =>
   s.users.find((u) => u.id === s.activeUserId) ?? null
-
-export const selectUserEntries = (userId: string) => (s: AppStore) =>
-  s.entries.filter((e) => e.userId === userId)
 
 export const selectAllUsers = (s: AppStore) => s.users
