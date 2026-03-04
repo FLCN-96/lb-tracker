@@ -2,7 +2,7 @@
 
 export type WeightUnit = 'lbs'
 
-export const AVAILABLE_EMOJIS = ['🦁', '🐻', '🦊', '🐺', '🦅', '🐸'] as const
+export const AVAILABLE_EMOJIS = ['🦁', '🐻', '🦊', '🐺', '🦅', '🐸', '🦜', '🦝'] as const
 export type UserEmoji = (typeof AVAILABLE_EMOJIS)[number]
 
 export interface User {
