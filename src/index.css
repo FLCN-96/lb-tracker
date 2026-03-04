@@ -779,7 +779,39 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .emoji-opt:active { transform: scale(0.93); }
 
-/* ─── Bottom sheet (expand log) ──────────────────────────────────────────── */
+/* ─── Centered modal (expand log) ────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+  animation: fade-in 0.18s ease;
+}
+
+.modal-dialog {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  padding: var(--space-md);
+  max-height: 88vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  animation: modal-pop 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+  box-shadow: 0 12px 48px rgba(17,26,15,0.28);
+}
+
+@keyframes modal-pop {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* legacy bottom-sheet classes kept for any other usage */
 .sheet-overlay {
   position: fixed;
   inset: 0;
@@ -821,45 +853,47 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   color: var(--color-text);
 }
 
-/* Date rows inside the sheet */
-.date-log-list {
-  list-style: none;
+/* 2-column grid for log/edit entries modal */
+.date-log-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: var(--space-md);
+}
+
+.date-log-cell {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 5px;
+  background: var(--color-bg-alt);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
 }
 
-.date-log-row {
+.date-log-cell__label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.date-log-cell__row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--color-border-light);
-}
-.date-log-row:last-child { border-bottom: none; }
-
-.date-log-row__label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-2);
-  min-width: 64px;
-}
-
-.date-log-row__right {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .date-log-input {
-  width: 76px;
-  background: var(--color-bg-alt);
+  flex: 1;
+  min-width: 0;
+  background: var(--color-surface);
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-sm);
   color: var(--color-text);
   font-size: 15px;
   font-weight: 700;
-  padding: 5px 8px;
+  padding: 5px 6px;
   text-align: center;
   outline: none;
   -webkit-appearance: none;
@@ -867,12 +901,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   transition: border-color 0.15s;
 }
 .date-log-input:focus { border-color: var(--color-primary); }
-.date-log-input--filled { border-color: var(--color-primary-light); background: color-mix(in srgb, var(--color-primary) 8%, var(--color-bg-alt)); }
+.date-log-input--filled { border-color: var(--color-primary-light); background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface)); }
 
 .date-log-unit {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--color-text-muted);
   font-weight: 600;
+  flex-shrink: 0;
 }
 
 /* ─── Settings / Modify values ───────────────────────────────────────────── */

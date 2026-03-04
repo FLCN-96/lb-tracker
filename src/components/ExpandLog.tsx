@@ -22,13 +22,12 @@ export default function ExpandLog({ userId, unit, onClose }: Props) {
   const removeEntry = useAppStore((s) => s.removeEntry)
 
   const overlayRef = useRef<HTMLDivElement>(null)
-  const sheetRef = useRef<HTMLDivElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
 
-  // Build rows: today + last 7 days
+  // Build rows: today + last 7 days = 8 rows
   const days = buildDays(7)
   const userEntries = entries.filter((e) => e.userId === userId)
 
-  // Map date → entry
   const entryByDate = new Map(userEntries.map((e) => [e.date, e]))
 
   const rows: DayRow[] = days.map((d) => {
@@ -41,7 +40,6 @@ export default function ExpandLog({ userId, unit, onClose }: Props) {
     }
   })
 
-  // Local weight state per date
   const [values, setValues] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {}
     for (const r of rows) {
@@ -52,7 +50,6 @@ export default function ExpandLog({ userId, unit, onClose }: Props) {
 
   const [saved, setSaved] = useState(false)
 
-  // Close on overlay click
   function handleOverlayClick(e: React.MouseEvent<HTMLDivElement>) {
     if (e.target === overlayRef.current) onClose()
   }
@@ -76,37 +73,22 @@ export default function ExpandLog({ userId, unit, onClose }: Props) {
     setTimeout(onClose, 700)
   }
 
-  // Lock body scroll while open; prevent touch scroll from bleeding through overlay
+  // Lock body scroll while open
   useEffect(() => {
     document.body.style.overflow = 'hidden'
-
-    const overlay = overlayRef.current
-    if (!overlay) return
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (!sheetRef.current?.contains(e.target as Node)) {
-        e.preventDefault()
-      }
-    }
-    overlay.addEventListener('touchmove', handleTouchMove, { passive: false })
-
-    return () => {
-      document.body.style.overflow = ''
-      overlay.removeEventListener('touchmove', handleTouchMove)
-    }
+    return () => { document.body.style.overflow = '' }
   }, [])
 
   return (
-    <div className="sheet-overlay" ref={overlayRef} onClick={handleOverlayClick}>
-      <div className="sheet" ref={sheetRef} role="dialog" aria-modal="true" aria-label="Log past entries">
-        <div className="sheet-handle" />
+    <div className="modal-overlay" ref={overlayRef} onClick={handleOverlayClick}>
+      <div className="modal-dialog" ref={dialogRef} role="dialog" aria-modal="true" aria-label="Log past entries">
         <h2 className="sheet-title">Log / Edit Entries</h2>
 
-        <ul className="date-log-list">
+        <div className="date-log-grid">
           {rows.map((row) => (
-            <li key={row.date} className="date-log-row">
-              <span className="date-log-row__label">{row.label}</span>
-              <div className="date-log-row__right">
+            <div key={row.date} className="date-log-cell">
+              <span className="date-log-cell__label">{row.label}</span>
+              <div className="date-log-cell__row">
                 <input
                   type="number"
                   inputMode="decimal"
@@ -122,11 +104,11 @@ export default function ExpandLog({ userId, unit, onClose }: Props) {
                 />
                 <span className="date-log-unit">{unit}</span>
               </div>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
 
-        <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn--ghost btn--full" onClick={onClose}>
             Cancel
           </button>
