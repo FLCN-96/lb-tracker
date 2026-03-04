@@ -227,7 +227,7 @@ html.ios-standalone #root {
 }
 
 /* ─── Sections ───────────────────────────────────────────────────────────── */
-.section { margin-top: var(--space-xl); }
+.section { margin-top: var(--space-lg); }
 
 .section-title {
   font-size: 11px;
@@ -428,7 +428,7 @@ html.ios-standalone #root {
   display: flex;
   align-items: center;
   gap: var(--space-md);
-  padding: var(--space-md);
+  padding: 10px var(--space-md);
   background: var(--color-surface);
   border: 2px solid transparent;
   border-radius: var(--radius-md);
@@ -441,10 +441,10 @@ html.ios-standalone #root {
 .member-card:active   { opacity: 0.8; }
 
 .member-avatar {
-  width: 48px; height: 48px;
+  width: 40px; height: 40px;
   border-radius: 50%;
   background: var(--color-green-100, #d8f3dc);
-  font-size: 26px;
+  font-size: 22px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
   border: 2px solid var(--color-border);
@@ -982,6 +982,26 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 700;
   padding: 4px 10px;
 }
+
+/* ─── Sync icon button (Dashboard header) ───────────────────────────────── */
+.btn-sync {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border);
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.2s, border-color 0.2s;
+}
+.btn-sync:disabled { opacity: 0.5; cursor: default; }
+.btn-sync--spin { animation: btn-sync-spin 0.7s linear infinite; }
+.btn-sync--ok  { color: var(--color-down); border-color: var(--color-down); }
+.btn-sync--err { color: var(--color-up);   border-color: var(--color-up); }
+@keyframes btn-sync-spin { to { transform: rotate(360deg); } }
 
 /* ─── Misc ───────────────────────────────────────────────────────────────── */
 .empty-state {

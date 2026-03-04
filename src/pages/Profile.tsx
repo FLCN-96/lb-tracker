@@ -79,7 +79,12 @@ export default function Profile() {
             <AddUserForm
               usedEmojis={new Set(users.map((u) => u.emoji))}
               onSave={(name, emoji, unit) => {
-                addUser(name, emoji, unit)
+                const existing = users.find((u) => u.name.toLowerCase() === name.toLowerCase())
+                if (existing) {
+                  setActiveUser(existing.id)
+                } else {
+                  addUser(name, emoji, unit)
+                }
                 setShowAddForm(false)
               }}
               onCancel={() => setShowAddForm(false)}

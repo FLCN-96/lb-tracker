@@ -4,6 +4,8 @@ import { useAppStore, selectActiveUser } from '@/store/useAppStore'
 import { formatWeight, formatDelta, todayStr } from '@/utils/weightCalc'
 import WeightChart from '@/components/WeightChart'
 import ExpandLog from '@/components/ExpandLog'
+import { storage } from '@/services/storage'
+import { fetchUsers, fetchEntries, pushUsers, pushEntries } from '@/services/github'
 
 export default function Dashboard() {
   const data = useActiveUserData()
@@ -11,9 +13,13 @@ export default function Dashboard() {
   const addEntry = useAppStore((s) => s.addEntry)
   const entries = useAppStore((s) => s.entries)
 
+  const mergeData = useAppStore((s) => s.mergeData)
   const [weightInput, setWeightInput] = useState('')
   const [logSaved, setLogSaved] = useState(false)
   const [showExpand, setShowExpand] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+  const [syncFlash, setSyncFlash] = useState<'ok' | 'err' | null>(null)
+  const ghConfig = storage.loadGitHubConfig()
 
   if (!user) return null  // handled by App login flow
 
@@ -32,6 +38,40 @@ export default function Dashboard() {
       setWeightInput('')
       setLogSaved(false)
     }, 1400)
+  }
+
+  async function handleQuickSync() {
+    if (!ghConfig?.token) return
+    const cfg = { token: ghConfig.token, repo: ghConfig.repo }
+    setSyncing(true)
+    setSyncFlash(null)
+    try {
+      const { users: remoteUsers, sha: usersSha } = await fetchUsers(cfg)
+      const { users: localUsers } = useAppStore.getState()
+      const allUserIds = new Set([...localUsers.map((u) => u.id), ...remoteUsers.map((u) => u.id)])
+      const remoteEntries: import('@/types').WeightEntry[] = []
+      const entryShas: Record<string, string | null> = {}
+      for (const uid of allUserIds) {
+        const { entries: ue, sha } = await fetchEntries(cfg, uid)
+        remoteEntries.push(...ue)
+        entryShas[uid] = sha
+      }
+      mergeData(remoteUsers, remoteEntries)
+      const merged = useAppStore.getState()
+      await pushUsers(cfg, merged.users, usersSha)
+      for (const u of merged.users) {
+        const ue = merged.entries.filter((e) => e.userId === u.id)
+        await pushEntries(cfg, u.id, ue, entryShas[u.id] ?? null, u.name)
+      }
+      storage.saveGitHubConfig({ ...ghConfig, lastSynced: new Date().toISOString() })
+      setSyncFlash('ok')
+      setTimeout(() => setSyncFlash(null), 2000)
+    } catch {
+      setSyncFlash('err')
+      setTimeout(() => setSyncFlash(null), 3000)
+    } finally {
+      setSyncing(false)
+    }
   }
 
   const { weeklyAverages, currentWeek, previousWeek, totalLost, streak } = data ?? {
@@ -58,11 +98,23 @@ export default function Dashboard() {
               {formatDate(today)}
             </span>
           </div>
-          {hasLoggedToday && (
-            <div className="today-badge">
-              <span>✓</span> Logged
-            </div>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {hasLoggedToday && (
+              <div className="today-badge">
+                <span>✓</span> Logged
+              </div>
+            )}
+            {ghConfig?.token && (
+              <button
+                className={`btn-sync${syncing ? ' btn-sync--spin' : ''}${syncFlash === 'ok' ? ' btn-sync--ok' : syncFlash === 'err' ? ' btn-sync--err' : ''}`}
+                onClick={handleQuickSync}
+                disabled={syncing}
+                aria-label="Sync with GitHub"
+              >
+                ↻
+              </button>
+            )}
+          </div>
         </header>
 
         {/* ── Chart ── */}

@@ -36,6 +36,12 @@ export default function EmojiLogin({ onDone }: Props) {
   function handleCreateProfile() {
     if (!name.trim()) { setError('Please enter your name.'); return }
     if (!selectedEmoji) { setError('Please pick an emoji.'); return }
+    const existing = users.find((u) => u.name.toLowerCase() === name.trim().toLowerCase())
+    if (existing) {
+      setActiveUser(existing.id)
+      onDone()
+      return
+    }
     addUser(name.trim(), selectedEmoji, 'lbs')
     onDone()
   }
