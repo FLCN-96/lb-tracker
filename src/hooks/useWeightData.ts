@@ -1,0 +1,55 @@
+import { useMemo } from 'react'
+import { useAppStore, selectActiveUser } from '@/store/useAppStore'
+import {
+  computeWeeklyAverages,
+  getRecentWeeks,
+  totalWeightLost,
+  computeStreak,
+} from '@/utils/weightCalc'
+import type { WeeklyAverage } from '@/types'
+
+/** Returns all computed data for the currently active user. */
+export function useActiveUserData() {
+  const user = useAppStore(selectActiveUser)
+  const entries = useAppStore((s) => s.entries)
+
+  return useMemo(() => {
+    if (!user) return null
+
+    const weeklyAverages = computeWeeklyAverages(user.id, entries)
+    const { current, previous } = getRecentWeeks(user.id, entries)
+    const lost = totalWeightLost(user.id, entries)
+    const streak = computeStreak(user.id, entries)
+
+    return {
+      user,
+      weeklyAverages,
+      currentWeek: current,
+      previousWeek: previous,
+      totalLost: lost,
+      streak,
+    }
+  }, [user, entries])
+}
+
+/** Returns weekly averages for a specific user by id. */
+export function useUserWeeklyAverages(userId: string): WeeklyAverage[] {
+  const entries = useAppStore((s) => s.entries)
+  return useMemo(
+    () => computeWeeklyAverages(userId, entries),
+    [userId, entries],
+  )
+}
+
+/** Returns all users with their most recent weekly average, for the group view. */
+export function useGroupSnapshot() {
+  const users = useAppStore((s) => s.users)
+  const entries = useAppStore((s) => s.entries)
+
+  return useMemo(() => {
+    return users.map((user) => {
+      const { current } = getRecentWeeks(user.id, entries)
+      return { user, currentWeek: current }
+    })
+  }, [users, entries])
+}

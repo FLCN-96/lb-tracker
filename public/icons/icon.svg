@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0f172a"/>
+  <!-- Scale base -->
+  <rect x="128" y="340" width="256" height="28" rx="14" fill="#38bdf8"/>
+  <!-- Scale pillar -->
+  <rect x="244" y="240" width="24" height="108" rx="8" fill="#38bdf8"/>
+  <!-- Scale platform (top) -->
+  <ellipse cx="256" cy="220" rx="96" ry="24" fill="#0ea5e9"/>
+  <!-- Down arrow -->
+  <path d="M220 130 L256 190 L292 130 Z" fill="#34d399"/>
+  <!-- Weight text area -->
+  <text x="256" y="110" text-anchor="middle" font-family="system-ui,sans-serif"
+        font-size="64" font-weight="700" fill="#f8fafc">LB</text>
+</svg>
