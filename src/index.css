@@ -127,10 +127,9 @@ html.ios-standalone #root {
 .app-shell {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 100%;
   max-width: 480px;
   margin: 0 auto;
-  position: relative;
   background: var(--color-bg);
 }
 
@@ -139,7 +138,7 @@ html.ios-standalone #root {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-top: var(--safe-top);
-  padding-bottom: var(--space-lg);
+  padding-bottom: calc(var(--tab-bar-h) + var(--safe-bottom) + var(--space-lg));
 }
 
 /* ─── Tab bar ────────────────────────────────────────────────────────────── */
@@ -150,8 +149,10 @@ html.ios-standalone #root {
   padding-bottom: var(--safe-bottom);
   background: var(--color-surface);
   border-top: 1px solid var(--color-border);
-  position: sticky;
+  position: fixed;
   bottom: 0;
+  left: 0;
+  right: 0;
   z-index: 100;
   box-shadow: 0 -2px 12px rgba(17,26,15,0.06);
 }
