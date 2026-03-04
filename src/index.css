@@ -139,7 +139,7 @@ html.ios-standalone #root {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-top: var(--safe-top);
-  padding-bottom: calc(var(--tab-bar-h) + var(--safe-bottom) + var(--space-md));
+  padding-bottom: var(--space-lg);
 }
 
 /* ─── Tab bar ────────────────────────────────────────────────────────────── */
