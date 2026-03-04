@@ -7,7 +7,14 @@ const KEYS = {
   USERS: 'lb-tracker:users',
   ENTRIES: 'lb-tracker:entries',
   ACTIVE_USER: 'lb-tracker:activeUserId',
+  GITHUB: 'lb-tracker:github',
 } as const
+
+export interface StoredGitHubConfig {
+  token: string
+  repo: string
+  lastSynced: string | null // ISO timestamp
+}
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -36,6 +43,9 @@ export const storage = {
 
   loadActiveUserId: () => load<string | null>(KEYS.ACTIVE_USER, null),
   saveActiveUserId: (id: string | null) => save(KEYS.ACTIVE_USER, id),
+
+  loadGitHubConfig: () => load<StoredGitHubConfig | null>(KEYS.GITHUB, null),
+  saveGitHubConfig: (cfg: StoredGitHubConfig | null) => save(KEYS.GITHUB, cfg),
 
   /** Wipe all app data — used for testing / account reset. */
   clearAll: () => {

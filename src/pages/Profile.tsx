@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAppStore, selectActiveUser } from '@/store/useAppStore'
 import { AVAILABLE_EMOJIS } from '@/types'
-import type { WeightUnit, UserEmoji } from '@/types'
+import type { UserEmoji } from '@/types'
 
 export default function Profile() {
   const users = useAppStore((s) => s.users)
@@ -105,12 +105,11 @@ function EditUserForm({
   onSave: (patch: Partial<Omit<import('@/types').User, 'id' | 'createdAt'>>) => void
 }) {
   const [name, setName] = useState(user.name)
-  const [unit, setUnit] = useState<WeightUnit>(user.unit)
   const [saved, setSaved] = useState(false)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    onSave({ name: name.trim() || user.name, unit })
+    onSave({ name: name.trim() || user.name })
     setSaved(true)
     setTimeout(() => setSaved(false), 1500)
   }
@@ -130,22 +129,6 @@ function EditUserForm({
         />
       </div>
 
-      <div className="form-group">
-        <label className="form-label">Weight unit</label>
-        <div className="segmented">
-          {(['lbs', 'kg'] as WeightUnit[]).map((u) => (
-            <button
-              key={u}
-              type="button"
-              className={`segmented__btn ${unit === u ? 'segmented__btn--active' : ''}`}
-              onClick={() => setUnit(u)}
-            >
-              {u}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <button type="submit" className={`btn btn--primary btn--full ${saved ? 'btn--saved' : ''}`}>
         {saved ? 'Saved ✓' : 'Save Changes'}
       </button>
@@ -161,20 +144,19 @@ function AddUserForm({
   onCancel,
 }: {
   usedEmojis: Set<string>
-  onSave: (name: string, emoji: UserEmoji, unit: WeightUnit) => void
+  onSave: (name: string, emoji: UserEmoji, unit: 'lbs') => void
   onCancel: () => void
 }) {
   const available = AVAILABLE_EMOJIS.filter((e) => !usedEmojis.has(e))
   const [name, setName] = useState('')
   const [emoji, setEmoji] = useState<UserEmoji | null>(available[0] ?? null)
-  const [unit, setUnit] = useState<WeightUnit>('lbs')
   const [error, setError] = useState<string | null>(null)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim()) { setError('Name is required.'); return }
     if (!emoji) { setError('No emoji slots available.'); return }
-    onSave(name.trim(), emoji, unit)
+    onSave(name.trim(), emoji, 'lbs')
   }
 
   return (
@@ -208,22 +190,6 @@ function AddUserForm({
           autoFocus
           required
         />
-      </div>
-
-      <div className="form-group">
-        <label className="form-label">Weight unit</label>
-        <div className="segmented">
-          {(['lbs', 'kg'] as WeightUnit[]).map((u) => (
-            <button
-              key={u}
-              type="button"
-              className={`segmented__btn ${unit === u ? 'segmented__btn--active' : ''}`}
-              onClick={() => setUnit(u)}
-            >
-              {u}
-            </button>
-          ))}
-        </div>
       </div>
 
       {error && <p className="form-error">{error}</p>}

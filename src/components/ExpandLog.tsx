@@ -23,6 +23,7 @@ export default function ExpandLog({ userId, unit, onClose }: Props) {
   const removeEntry = useAppStore((s) => s.removeEntry)
 
   const overlayRef = useRef<HTMLDivElement>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
 
   // Build rows: today + last 7 days
   const days = buildDays(7)
@@ -78,15 +79,29 @@ export default function ExpandLog({ userId, unit, onClose }: Props) {
     setTimeout(onClose, 700)
   }
 
-  // Lock body scroll while open
+  // Lock body scroll while open; prevent touch scroll from bleeding through overlay
   useEffect(() => {
     document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
+
+    const overlay = overlayRef.current
+    if (!overlay) return
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!sheetRef.current?.contains(e.target as Node)) {
+        e.preventDefault()
+      }
+    }
+    overlay.addEventListener('touchmove', handleTouchMove, { passive: false })
+
+    return () => {
+      document.body.style.overflow = ''
+      overlay.removeEventListener('touchmove', handleTouchMove)
+    }
   }, [])
 
   return (
     <div className="sheet-overlay" ref={overlayRef} onClick={handleOverlayClick}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label="Log past entries">
+      <div className="sheet" ref={sheetRef} role="dialog" aria-modal="true" aria-label="Log past entries">
         <div className="sheet-handle" />
         <h2 className="sheet-title">Log / Edit Entries</h2>
 
