@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [claude/weight-tracker-pwa-setup-X18S6]
   workflow_dispatch:
 
 permissions:
