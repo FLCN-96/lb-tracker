@@ -6,5 +6,13 @@
     "date": "2026-03-04",
     "note": null,
     "createdAt": "2026-03-04T22:33:21.014Z"
+  },
+  {
+    "id": "91396924-2aac-40b0-8c70-faad8caf1a4a",
+    "userId": "2ce92d0b-fe0f-4b05-bed6-5ecd6acd1a67",
+    "weight": 197.2,
+    "date": "2026-03-03",
+    "note": null,
+    "createdAt": "2026-03-04T22:45:29.238Z"
   }
 ]
