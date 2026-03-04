@@ -558,6 +558,58 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   padding: var(--space-xs) 0;
 }
 
+.form-hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.form-label__link {
+  float: right;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.form-label__link:hover { text-decoration: underline; }
+
+/* ─── GitHub Sync section ────────────────────────────────────────────────── */
+.sync-hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-md);
+  line-height: 1.5;
+}
+
+.token-input-row {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+.token-input-row .form-input { flex: 1; }
+
+.btn--icon {
+  padding: 10px 12px;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.sync-error {
+  font-size: 13px;
+  color: var(--color-up);
+  font-weight: 500;
+  padding: var(--space-xs) 0;
+  word-break: break-word;
+}
+
+.sync-ok {
+  font-size: 13px;
+  color: var(--color-down);
+  font-weight: 500;
+  padding: var(--space-xs) 0;
+  text-align: center;
+}
+
 /* ─── Segmented control ──────────────────────────────────────────────────── */
 .segmented {
   display: flex;

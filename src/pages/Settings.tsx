@@ -1,5 +1,13 @@
 import { useState } from 'react'
 import { useAppStore, selectActiveUser } from '@/store/useAppStore'
+import { storage } from '@/services/storage'
+import {
+  fetchUsers,
+  fetchEntries,
+  pushUsers,
+  pushEntries,
+} from '@/services/github'
+import type { GitHubConfig } from '@/services/github'
 
 type EditTarget = { id: string; date: string; weight: number; note: string | null }
 
@@ -9,6 +17,7 @@ export default function Settings() {
   const updateUser = useAppStore((s) => s.updateUser)
   const updateEntry = useAppStore((s) => s.updateEntry)
   const removeEntry = useAppStore((s) => s.removeEntry)
+  const mergeData = useAppStore((s) => s.mergeData)
 
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null)
   const [editWeight, setEditWeight] = useState('')
@@ -19,6 +28,17 @@ export default function Settings() {
   const [goalW, setGoalW] = useState(user?.goalWeight?.toString() ?? '')
   const [startW, setStartW] = useState(user?.startingWeight?.toString() ?? '')
   const [settingsSaved, setSettingsSaved] = useState(false)
+
+  // GitHub sync
+  const stored = storage.loadGitHubConfig()
+  const [ghRepo, setGhRepo] = useState(stored?.repo ?? 'FLCN-96/lb-tracker')
+  const [ghToken, setGhToken] = useState(stored?.token ?? '')
+  const [showToken, setShowToken] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [syncError, setSyncError] = useState<string | null>(null)
+  const [lastSynced, setLastSynced] = useState<Date | null>(
+    stored?.lastSynced ? new Date(stored.lastSynced) : null,
+  )
 
   if (!user) {
     return (
@@ -69,6 +89,58 @@ export default function Settings() {
     setTimeout(() => setSettingsSaved(false), 1500)
   }
 
+  async function handleSync() {
+    const cfg: GitHubConfig = { token: ghToken.trim(), repo: ghRepo.trim() }
+    if (!cfg.token || !cfg.repo) return
+
+    setIsSyncing(true)
+    setSyncError(null)
+
+    try {
+      // 1. Pull remote users
+      const { users: remoteUsers, sha: usersSha } = await fetchUsers(cfg)
+
+      // 2. Pull remote entries for every known user (local + remote)
+      const { users: localUsers, entries: localEntries } = useAppStore.getState()
+      const allUserIds = new Set([
+        ...localUsers.map((u) => u.id),
+        ...remoteUsers.map((u) => u.id),
+      ])
+
+      const remoteEntries = []
+      const entryShas: Record<string, string | null> = {}
+      for (const uid of allUserIds) {
+        const { entries: ue, sha } = await fetchEntries(cfg, uid)
+        remoteEntries.push(...ue)
+        entryShas[uid] = sha
+      }
+
+      // 3. Merge remote into local store
+      mergeData(remoteUsers, remoteEntries)
+
+      // 4. Push merged state back to GitHub
+      const merged = useAppStore.getState()
+      await pushUsers(cfg, merged.users, usersSha)
+      for (const u of merged.users) {
+        const ue = merged.entries.filter((e) => e.userId === u.id)
+        await pushEntries(cfg, u.id, ue, entryShas[u.id] ?? null, u.name)
+      }
+
+      // 5. Persist config + timestamp
+      const now = new Date()
+      storage.saveGitHubConfig({
+        token: cfg.token,
+        repo: cfg.repo,
+        lastSynced: now.toISOString(),
+      })
+      setLastSynced(now)
+    } catch (err) {
+      setSyncError(err instanceof Error ? err.message : 'Sync failed')
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
   return (
     <div className="page">
       <header className="page-header">
@@ -76,7 +148,7 @@ export default function Settings() {
         <span className="page-subtitle">{user.emoji} {user.name}</span>
       </header>
 
-      {/* ── Goal / unit settings ── */}
+      {/* ── Goal settings ── */}
       <section className="section">
         <div className="section-title">Your goals</div>
         <form className="form" onSubmit={handleSaveSettings}>
@@ -146,6 +218,84 @@ export default function Settings() {
         )}
       </section>
 
+      {/* ── GitHub Sync ── */}
+      <section className="section">
+        <div className="section-title">GitHub Sync</div>
+        <p className="sync-hint">
+          Syncs all family members' data through your GitHub repo.
+          Each save creates a real git commit — full history included.
+        </p>
+
+        <div className="form">
+          <div className="form-group">
+            <label className="form-label">Repository</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="owner/repo"
+              value={ghRepo}
+              onChange={(e) => setGhRepo(e.target.value)}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              Personal Access Token
+              <a
+                className="form-label__link"
+                href="https://github.com/settings/personal-access-tokens/new"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Create token ↗
+              </a>
+            </label>
+            <div className="token-input-row">
+              <input
+                type={showToken ? 'text' : 'password'}
+                className="form-input"
+                placeholder="ghp_xxxxxxxxxxxx"
+                value={ghToken}
+                onChange={(e) => setGhToken(e.target.value)}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+              />
+              <button
+                type="button"
+                className="btn btn--ghost btn--icon"
+                onClick={() => setShowToken((v) => !v)}
+                aria-label={showToken ? 'Hide token' : 'Show token'}
+              >
+                {showToken ? '🙈' : '👁'}
+              </button>
+            </div>
+            <p className="form-hint">
+              Fine-grained PAT · Contents: Read &amp; Write · this repo only
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn--primary btn--full"
+            onClick={handleSync}
+            disabled={isSyncing || !ghToken.trim() || !ghRepo.trim()}
+          >
+            {isSyncing ? 'Syncing…' : 'Sync Now'}
+          </button>
+
+          {syncError && (
+            <p className="sync-error">{syncError}</p>
+          )}
+          {!syncError && lastSynced && (
+            <p className="sync-ok">Last synced {formatRelative(lastSynced)}</p>
+          )}
+        </div>
+      </section>
+
       {/* ── Edit sheet ── */}
       {editTarget && (
         <div
@@ -210,4 +360,14 @@ function formatDisplayDate(dateStr: string): string {
 function formatDayName(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number)
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'long' })
+}
+
+function formatRelative(date: Date): string {
+  const diffMs = Date.now() - date.getTime()
+  const mins = Math.floor(diffMs / 60_000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }

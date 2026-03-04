@@ -17,6 +17,9 @@ interface AppActions {
 
   // Hydrate from storage (called once on mount)
   hydrate: () => void
+
+  // Merge remote data into local state (used by GitHub sync)
+  mergeData: (remoteUsers: User[], remoteEntries: WeightEntry[]) => void
 }
 
 type AppStore = AppState & AppActions
@@ -111,6 +114,26 @@ export const useAppStore = create<AppStore>((set, get) => ({
   removeEntry: (id) => {
     const entries = get().entries.filter((e) => e.id !== id)
     set({ entries })
+    storage.saveEntries(entries)
+  },
+
+  mergeData: (remoteUsers, remoteEntries) => {
+    const { users: localUsers, entries: localEntries } = get()
+
+    // Users: remote wins for existing ids; append local-only users
+    const userMap = new Map<string, User>()
+    for (const u of remoteUsers) userMap.set(u.id, u)
+    for (const u of localUsers) if (!userMap.has(u.id)) userMap.set(u.id, u)
+    const users = [...userMap.values()]
+
+    // Entries: remote wins for existing ids; append local-only entries
+    const entryMap = new Map<string, WeightEntry>()
+    for (const e of remoteEntries) entryMap.set(e.id, e)
+    for (const e of localEntries) if (!entryMap.has(e.id)) entryMap.set(e.id, e)
+    const entries = [...entryMap.values()]
+
+    set({ users, entries })
+    storage.saveUsers(users)
     storage.saveEntries(entries)
   },
 }))
