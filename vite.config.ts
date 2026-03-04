@@ -3,7 +3,10 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
+const BASE = '/lb-tracker/'
+
 export default defineConfig({
+  base: BASE,
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -18,12 +21,12 @@ export default defineConfig({
         name: 'LB Tracker',
         short_name: 'LB Tracker',
         description: 'Track your weekly average weight loss with friends',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        theme_color: '#2d6a4f',
+        background_color: '#0e1a11',
         display: 'standalone',
         orientation: 'portrait',
-        scope: '/',
-        start_url: '/',
+        scope: BASE,
+        start_url: BASE,
         icons: [
           {
             src: 'icons/icon-192.png',

@@ -19,10 +19,8 @@ export default function App() {
     setHydrated(true)
   }, [hydrate])
 
-  // Show a blank screen until storage is loaded to avoid flash
   if (!hydrated) return null
 
-  // Show login/profile-picker when no active user is selected
   const needsLogin = !activeUserId || !users.find((u) => u.id === activeUserId)
 
   if (needsLogin) {
@@ -30,7 +28,7 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/lb-tracker">
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
