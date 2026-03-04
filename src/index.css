@@ -826,44 +826,40 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: 0;
 }
 
 .date-log-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
+  display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) 0;
+  justify-content: space-between;
+  padding: 6px 0;
   border-bottom: 1px solid var(--color-border-light);
 }
 .date-log-row:last-child { border-bottom: none; }
 
 .date-log-row__label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--color-text-2);
-}
-.date-log-row__sub {
-  font-size: 11px;
-  color: var(--color-text-muted);
+  min-width: 64px;
 }
 
 .date-log-row__right {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: 6px;
 }
 
 .date-log-input {
-  width: 80px;
+  width: 76px;
   background: var(--color-bg-alt);
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-sm);
   color: var(--color-text);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
-  padding: 8px 10px;
+  padding: 5px 8px;
   text-align: center;
   outline: none;
   -webkit-appearance: none;

@@ -11,7 +11,6 @@ interface Props {
 interface DayRow {
   date: string
   label: string
-  dayName: string
   existingEntryId: string | null
   existingWeight: number | null
 }
@@ -37,7 +36,6 @@ export default function ExpandLog({ userId, unit, onClose }: Props) {
     return {
       date: d.date,
       label: d.label,
-      dayName: d.dayName,
       existingEntryId: entry?.id ?? null,
       existingWeight: entry?.weight ?? null,
     }
@@ -66,7 +64,6 @@ export default function ExpandLog({ userId, unit, onClose }: Props) {
 
       if (row.existingEntryId) {
         if (!raw || isNaN(w)) {
-          // Remove entry if cleared
           removeEntry(row.existingEntryId)
         } else {
           updateEntry(row.existingEntryId, w)
@@ -108,10 +105,7 @@ export default function ExpandLog({ userId, unit, onClose }: Props) {
         <ul className="date-log-list">
           {rows.map((row) => (
             <li key={row.date} className="date-log-row">
-              <div className="date-log-row__label">
-                <div>{row.label}</div>
-                <div className="date-log-row__sub">{row.dayName}</div>
-              </div>
+              <span className="date-log-row__label">{row.label}</span>
               <div className="date-log-row__right">
                 <input
                   type="number"
@@ -132,7 +126,7 @@ export default function ExpandLog({ userId, unit, onClose }: Props) {
           ))}
         </ul>
 
-        <div style={{ marginTop: 24, display: 'flex', gap: 8 }}>
+        <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
           <button className="btn btn--ghost btn--full" onClick={onClose}>
             Cancel
           </button>
@@ -159,12 +153,18 @@ function buildDays(pastDays: number) {
     d.setDate(d.getDate() - i)
     const iso = toIsoDate(d)
 
-    const label =
-      i === 0 ? 'Today' : i === 1 ? 'Yesterday' : formatShortDate(d)
+    let label: string
+    if (i === 0) {
+      label = 'Today'
+    } else if (i === 1) {
+      label = 'Yest.'
+    } else {
+      const day = d.toLocaleDateString(undefined, { weekday: 'short' })
+      const date = `${d.getMonth() + 1}/${d.getDate()}`
+      label = `${day} ${date}`
+    }
 
-    const dayName = i < 2 ? formatFullDate(d) : d.toLocaleDateString(undefined, { weekday: 'long' })
-
-    result.push({ date: iso, label, dayName })
+    result.push({ date: iso, label })
   }
 
   return result
@@ -173,12 +173,3 @@ function buildDays(pastDays: number) {
 function toIsoDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
-
-function formatShortDate(d: Date): string {
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-}
-
-function formatFullDate(d: Date): string {
-  return d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })
-}
-
