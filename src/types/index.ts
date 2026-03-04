@@ -1,6 +1,6 @@
 // ─── Core Domain Types ──────────────────────────────────────────────────────
 
-export type WeightUnit = 'lbs' | 'kg'
+export type WeightUnit = 'lbs'
 
 export const AVAILABLE_EMOJIS = ['🦁', '🐻', '🦊', '🐺', '🦅', '🐸'] as const
 export type UserEmoji = (typeof AVAILABLE_EMOJIS)[number]

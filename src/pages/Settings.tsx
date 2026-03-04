@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useAppStore, selectActiveUser } from '@/store/useAppStore'
-import type { WeightUnit } from '@/types'
 
 type EditTarget = { id: string; date: string; weight: number; note: string | null }
 
@@ -16,10 +15,9 @@ export default function Settings() {
   const [editNote, setEditNote] = useState('')
   const [editSaved, setEditSaved] = useState(false)
 
-  // Goal / unit settings
+  // Goal settings
   const [goalW, setGoalW] = useState(user?.goalWeight?.toString() ?? '')
   const [startW, setStartW] = useState(user?.startingWeight?.toString() ?? '')
-  const [unit, setUnit] = useState<WeightUnit>(user?.unit ?? 'lbs')
   const [settingsSaved, setSettingsSaved] = useState(false)
 
   if (!user) {
@@ -64,7 +62,6 @@ export default function Settings() {
   function handleSaveSettings(e: React.FormEvent) {
     e.preventDefault()
     updateUser(user.id, {
-      unit,
       goalWeight: parseFloat(goalW) || null,
       startingWeight: parseFloat(startW) || null,
     })
@@ -83,43 +80,27 @@ export default function Settings() {
       <section className="section">
         <div className="section-title">Your goals</div>
         <form className="form" onSubmit={handleSaveSettings}>
-          <div className="form-group">
-            <label className="form-label">Weight unit</label>
-            <div className="segmented">
-              {(['lbs', 'kg'] as WeightUnit[]).map((u) => (
-                <button
-                  key={u}
-                  type="button"
-                  className={`segmented__btn ${unit === u ? 'segmented__btn--active' : ''}`}
-                  onClick={() => setUnit(u)}
-                >
-                  {u}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label">Starting weight</label>
+              <label className="form-label">Starting weight (lbs)</label>
               <input
                 type="number"
                 inputMode="decimal"
                 step="0.1"
                 className="form-input"
-                placeholder={unit === 'lbs' ? '200' : '90'}
+                placeholder="200"
                 value={startW}
                 onChange={(e) => setStartW(e.target.value)}
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Goal weight</label>
+              <label className="form-label">Goal weight (lbs)</label>
               <input
                 type="number"
                 inputMode="decimal"
                 step="0.1"
                 className="form-input"
-                placeholder={unit === 'lbs' ? '170' : '77'}
+                placeholder="170"
                 value={goalW}
                 onChange={(e) => setGoalW(e.target.value)}
               />

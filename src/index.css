@@ -113,6 +113,16 @@ body {
 #root { height: 100%; }
 button, input, select, textarea { font-family: inherit; }
 
+/* ─── iOS PWA standalone mode — eliminate bottom whitespace gap ──────────── */
+@media (display-mode: standalone) {
+  html, body, #root { height: -webkit-fill-available; }
+}
+html.ios-standalone,
+html.ios-standalone body,
+html.ios-standalone #root {
+  height: -webkit-fill-available;
+}
+
 /* ─── App shell ──────────────────────────────────────────────────────────── */
 .app-shell {
   display: flex;
@@ -737,6 +747,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   padding: var(--space-sm) var(--space-md) calc(var(--space-xl) + var(--safe-bottom));
   max-height: 85vh;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   animation: slide-up 0.25s cubic-bezier(0.32, 0.72, 0, 1);
   box-shadow: 0 -8px 40px rgba(17,26,15,0.18);
 }

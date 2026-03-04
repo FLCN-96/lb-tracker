@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import { AVAILABLE_EMOJIS } from '@/types'
-import type { UserEmoji, WeightUnit } from '@/types'
+import type { UserEmoji } from '@/types'
 
 interface Props {
   onDone: () => void
@@ -17,7 +17,6 @@ export default function EmojiLogin({ onDone }: Props) {
   const [step, setStep] = useState<Step>('pick-profile')
   const [selectedEmoji, setSelectedEmoji] = useState<UserEmoji | null>(null)
   const [name, setName] = useState('')
-  const [unit, setUnit] = useState<WeightUnit>('lbs')
   const [error, setError] = useState<string | null>(null)
 
   // Already-used emojis (so each user has a unique one)
@@ -37,7 +36,7 @@ export default function EmojiLogin({ onDone }: Props) {
   function handleCreateProfile() {
     if (!name.trim()) { setError('Please enter your name.'); return }
     if (!selectedEmoji) { setError('Please pick an emoji.'); return }
-    addUser(name.trim(), selectedEmoji, unit)
+    addUser(name.trim(), selectedEmoji, 'lbs')
     onDone()
   }
 
@@ -126,22 +125,6 @@ export default function EmojiLogin({ onDone }: Props) {
           maxLength={24}
           autoFocus
         />
-
-        <div className="form-group">
-          <label className="form-label">Weight unit</label>
-          <div className="segmented">
-            {(['lbs', 'kg'] as WeightUnit[]).map((u) => (
-              <button
-                key={u}
-                type="button"
-                className={`segmented__btn ${unit === u ? 'segmented__btn--active' : ''}`}
-                onClick={() => setUnit(u)}
-              >
-                {u}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {error && <p className="form-error">{error}</p>}
 
