@@ -16,5 +16,14 @@
     "startingWeight": null,
     "goalWeight": null,
     "createdAt": "2026-03-04T22:34:38.432Z"
+  },
+  {
+    "id": "e22d3fff-24cb-4367-80f1-61cb3f5ffbbe",
+    "name": "Jose",
+    "emoji": "🦜",
+    "unit": "lbs",
+    "startingWeight": null,
+    "goalWeight": null,
+    "createdAt": "2026-03-04T23:52:22.927Z"
   }
 ]
