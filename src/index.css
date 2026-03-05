@@ -829,6 +829,27 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .form-label__link:hover { text-decoration: underline; }
 
+/* ─── Battle page ────────────────────────────────────────────────────────── */
+.battle-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  padding: 0 4px 16px;
+}
+.battle-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.battle-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
 /* ─── Mass Import ────────────────────────────────────────────────────────── */
 .import-textarea {
   width: 100%;

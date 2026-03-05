@@ -6,6 +6,7 @@ import EmojiLogin from '@/components/EmojiLogin'
 import Dashboard from '@/pages/Dashboard'
 import Group from '@/pages/Group'
 import Profile from '@/pages/Profile'
+import Battle from '@/pages/Battle'
 import Settings from '@/pages/Settings'
 
 export default function App() {
@@ -34,6 +35,7 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="group" element={<Group />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="battle" element={<Battle />} />
           <Route path="settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

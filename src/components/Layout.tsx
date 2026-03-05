@@ -30,6 +30,18 @@ function GroupIcon() {
   )
 }
 
+function TrophyIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 9H4a2 2 0 0 1-2-2V5h4"/>
+      <path d="M18 9h2a2 2 0 0 0 2-2V5h-4"/>
+      <path d="M12 17v4"/>
+      <path d="M8 21h8"/>
+      <path d="M6 3h12v8a6 6 0 0 1-12 0V3z"/>
+    </svg>
+  )
+}
+
 function GearIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -67,6 +79,15 @@ export default function Layout() {
         >
           <span className="tab-icon" aria-hidden="true"><PersonIcon /></span>
           <span className="tab-label">{profileLabel}</span>
+        </NavLink>
+
+        <NavLink
+          to="/battle"
+          className={({ isActive }) => `tab-item${isActive ? ' tab-item--active' : ''}`}
+          aria-label="Battle"
+        >
+          <span className="tab-icon" aria-hidden="true"><TrophyIcon /></span>
+          <span className="tab-label">Battle</span>
         </NavLink>
 
         <NavLink
