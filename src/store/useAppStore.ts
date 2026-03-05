@@ -20,6 +20,12 @@ interface AppActions {
 
   // Merge remote data into local state (used by GitHub sync)
   mergeData: (remoteUsers: User[], remoteEntries: WeightEntry[]) => void
+
+  // Replace local state entirely with remote data (destructive sync)
+  replaceData: (remoteUsers: User[], remoteEntries: WeightEntry[]) => void
+
+  // Remove duplicate users (same name) and remap their entries
+  deduplicate: () => void
 }
 
 type AppStore = AppState & AppActions
@@ -32,11 +38,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   // ── Hydration ─────────────────────────────────────────────────────────────
   hydrate: () => {
-    set({
-      users: storage.loadUsers(),
-      entries: storage.loadEntries(),
-      activeUserId: storage.loadActiveUserId(),
-    })
+    const users = storage.loadUsers()
+    const entries = storage.loadEntries()
+    const activeUserId = storage.loadActiveUserId()
+    // Patch any legacy users missing the new fields
+    const patched = users.map((u) => ({
+      heightIn: null,
+      gender: null,
+      ...u,
+    }))
+    set({ users: patched, entries, activeUserId })
   },
 
   // ── User actions ──────────────────────────────────────────────────────────
@@ -48,13 +59,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
       unit,
       startingWeight: startingWeight ?? null,
       goalWeight: goalWeight ?? null,
+      heightIn: null,
+      gender: null,
       createdAt: new Date().toISOString(),
     }
     const users = [...get().users, user]
     set({ users })
     storage.saveUsers(users)
 
-    // Auto-select if first user
     if (get().activeUserId === null) {
       set({ activeUserId: user.id })
       storage.saveActiveUserId(user.id)
@@ -117,16 +129,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
     storage.saveEntries(entries)
   },
 
+  // ── Sync: merge (non-destructive) ─────────────────────────────────────────
   mergeData: (remoteUsers, remoteEntries) => {
     const { users: localUsers, entries: localEntries } = get()
 
-    // Users: remote wins for existing ids; append local-only users
     const userMap = new Map<string, User>()
     for (const u of remoteUsers) userMap.set(u.id, u)
     for (const u of localUsers) if (!userMap.has(u.id)) userMap.set(u.id, u)
     const users = [...userMap.values()]
 
-    // Entries: remote wins for existing ids; append local-only entries
     const entryMap = new Map<string, WeightEntry>()
     for (const e of remoteEntries) entryMap.set(e.id, e)
     for (const e of localEntries) if (!entryMap.has(e.id)) entryMap.set(e.id, e)
@@ -135,6 +146,85 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ users, entries })
     storage.saveUsers(users)
     storage.saveEntries(entries)
+  },
+
+  // ── Sync: replace (destructive) ───────────────────────────────────────────
+  replaceData: (remoteUsers, remoteEntries) => {
+    const { activeUserId, users: localUsers } = get()
+    const currentUser = localUsers.find((u) => u.id === activeUserId)
+
+    // Try to keep the same "person" selected by matching on name
+    let newActiveId: string | null = null
+    if (currentUser) {
+      const match = remoteUsers.find(
+        (u) => u.name.toLowerCase() === currentUser.name.toLowerCase(),
+      )
+      newActiveId = match?.id ?? remoteUsers[0]?.id ?? null
+    } else {
+      newActiveId = remoteUsers[0]?.id ?? null
+    }
+
+    // Patch any missing new fields on remote users
+    const patched = remoteUsers.map((u) => ({ heightIn: null, gender: null, ...u }))
+
+    set({ users: patched, entries: remoteEntries, activeUserId: newActiveId })
+    storage.saveUsers(patched)
+    storage.saveEntries(remoteEntries)
+    storage.saveActiveUserId(newActiveId)
+  },
+
+  // ── Deduplicate: merge users with same name ───────────────────────────────
+  deduplicate: () => {
+    const { users, entries, activeUserId } = get()
+
+    // Group by normalised name
+    const byName = new Map<string, User[]>()
+    for (const u of users) {
+      const key = u.name.toLowerCase().trim()
+      byName.set(key, [...(byName.get(key) ?? []), u])
+    }
+
+    const keptUsers: User[] = []
+    const idRemap = new Map<string, string>() // dup id → kept id
+
+    for (const group of byName.values()) {
+      if (group.length === 1) {
+        keptUsers.push(group[0])
+        continue
+      }
+      // Keep the user with the most entries; tie-break by earliest createdAt
+      const sorted = [...group].sort((a, b) => {
+        const aC = entries.filter((e) => e.userId === a.id).length
+        const bC = entries.filter((e) => e.userId === b.id).length
+        return bC !== aC ? bC - aC : a.createdAt.localeCompare(b.createdAt)
+      })
+      keptUsers.push(sorted[0])
+      for (const dup of sorted.slice(1)) idRemap.set(dup.id, sorted[0].id)
+    }
+
+    // Re-map entries from removed duplicates
+    const remapped = entries.map((e) =>
+      idRemap.has(e.userId) ? { ...e, userId: idRemap.get(e.userId)! } : e,
+    )
+
+    // Deduplicate entries with same userId+date (keep most-recent createdAt)
+    const entryByKey = new Map<string, WeightEntry>()
+    for (const e of remapped) {
+      const key = `${e.userId}:${e.date}`
+      const existing = entryByKey.get(key)
+      if (!existing || e.createdAt > existing.createdAt) entryByKey.set(key, e)
+    }
+    const dedupedEntries = [...entryByKey.values()]
+
+    const newActiveId =
+      activeUserId && idRemap.has(activeUserId)
+        ? idRemap.get(activeUserId)!
+        : activeUserId
+
+    set({ users: keptUsers, entries: dedupedEntries, activeUserId: newActiveId })
+    storage.saveUsers(keptUsers)
+    storage.saveEntries(dedupedEntries)
+    storage.saveActiveUserId(newActiveId)
   },
 }))
 

@@ -118,7 +118,12 @@ export default function Dashboard() {
         </header>
 
         {/* ── Chart ── */}
-        <WeightChart data={weeklyAverages} unit={user.unit} height={190} />
+        <WeightChart
+          data={weeklyAverages}
+          unit={user.unit}
+          height={190}
+          dailyEntries={entries.filter((e) => e.userId === user.id)}
+        />
 
         {/* ── Log today ── */}
         <div className="log-section">

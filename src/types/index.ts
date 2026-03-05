@@ -1,6 +1,7 @@
 // ─── Core Domain Types ──────────────────────────────────────────────────────
 
 export type WeightUnit = 'lbs'
+export type Gender = 'male' | 'female' | 'other'
 
 export const AVAILABLE_EMOJIS = ['🦁', '🐻', '🦊', '🐺', '🦅', '🐸', '🦜', '🦝'] as const
 export type UserEmoji = (typeof AVAILABLE_EMOJIS)[number]
@@ -12,6 +13,8 @@ export interface User {
   unit: WeightUnit
   startingWeight: number | null
   goalWeight: number | null
+  heightIn: number | null   // total height in inches, e.g. 70 = 5ft 10in
+  gender: Gender | null
   createdAt: string
 }
 
