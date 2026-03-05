@@ -14,5 +14,21 @@
     "date": "2026-02-25",
     "note": null,
     "createdAt": "2026-03-05T00:00:22.363Z"
+  },
+  {
+    "id": "4f6cb834-3fda-4c2e-9661-f2176279f1a1",
+    "userId": "2ce92d0b-fe0f-4b05-bed6-5ecd6acd1a67",
+    "weight": 197.2,
+    "date": "2026-03-03",
+    "note": null,
+    "createdAt": "2026-03-05T10:08:52.384Z"
+  },
+  {
+    "id": "9daf5aef-8e26-4754-8d94-0e9d1d12016f",
+    "userId": "2ce92d0b-fe0f-4b05-bed6-5ecd6acd1a67",
+    "weight": 194,
+    "date": "2026-02-27",
+    "note": null,
+    "createdAt": "2026-03-05T10:09:41.951Z"
   }
 ]
