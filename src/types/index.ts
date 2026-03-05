@@ -13,8 +13,9 @@ export interface User {
   unit: WeightUnit
   startingWeight: number | null
   goalWeight: number | null
-  heightIn: number | null   // total height in inches, e.g. 70 = 5ft 10in
+  heightIn: number | null       // total height in inches, e.g. 70 = 5ft 10in
   gender: Gender | null
+  favoriteColor: string | null  // 6-digit hex e.g. "#3a7d44"
   createdAt: string
 }
 

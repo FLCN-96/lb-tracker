@@ -1,4 +1,14 @@
 import { useState } from 'react'
+
+function FloppyIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+      <polyline points="17,21 17,13 7,13 7,21"/>
+      <polyline points="7,3 7,8 15,8"/>
+    </svg>
+  )
+}
 import { useAppStore, selectActiveUser } from '@/store/useAppStore'
 import { storage } from '@/services/storage'
 import {
@@ -144,8 +154,30 @@ export default function Settings() {
   return (
     <div className="page">
       <header className="page-header">
-        <h1 className="page-title">Settings</h1>
-        <span className="page-subtitle">{user.emoji} {user.name}</span>
+        <div>
+          <h1 className="page-title">Settings</h1>
+          <span className="page-subtitle">{user.emoji} {user.name}</span>
+        </div>
+        <div className="header-actions">
+          <button
+            className={`btn-icon${settingsSaved ? ' btn-icon--saved' : ''}`}
+            onClick={(e) => handleSaveSettings(e as unknown as React.FormEvent)}
+            aria-label="Save settings"
+            title="Save settings"
+          >
+            {settingsSaved ? '✓' : <FloppyIcon />}
+          </button>
+          {ghToken.trim() && (
+            <button
+              className="btn-sync"
+              onClick={handleSync}
+              disabled={isSyncing || !ghToken.trim() || !ghRepo.trim()}
+              aria-label="Sync with GitHub"
+            >
+              {isSyncing ? '…' : '↻'}
+            </button>
+          )}
+        </div>
       </header>
 
       {/* ── Goal settings ── */}

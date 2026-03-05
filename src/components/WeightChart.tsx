@@ -61,15 +61,23 @@ export default function WeightChart({ data, unit, height = 180, dailyEntries = [
     return PAD.left + ((t - startMs) / msRange) * innerW
   }
 
-  const dailyDots = dailyEntries
+  // Sort daily entries by date and build SVG points for the faint grey line
+  const sortedDailyEntries = [...dailyEntries]
     .filter((e) => {
       const t = new Date(e.date + 'T12:00:00Z').getTime()
       return t >= startMs && t <= endMs
     })
-    .map((e) => ({
-      x: dateToX(e.date),
-      y: Math.max(PAD.top, Math.min(PAD.top + innerH, toY(e.weight))),
-    }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  const dailyPts = sortedDailyEntries.map((e) => ({
+    x: dateToX(e.date),
+    y: Math.max(PAD.top, Math.min(PAD.top + innerH, toY(e.weight))),
+  }))
+
+  const dailyLinePath = dailyPts.length >= 2 ? catmullRomPath(dailyPts) : null
+  const dailyAreaPath = dailyLinePath && dailyPts.length >= 2
+    ? `${dailyLinePath} L ${dailyPts[dailyPts.length - 1].x},${bottomY} L ${dailyPts[0].x},${bottomY} Z`
+    : null
 
   return (
     <div className="chart-wrap">
@@ -124,13 +132,18 @@ export default function WeightChart({ data, unit, height = 180, dailyEntries = [
           </text>
         ))}
 
-        {/* ── Daily raw entry dots — rendered first so weekly line sits on top ── */}
-        {dailyDots.map((dot, i) => (
-          <circle
-            key={i} cx={dot.x} cy={dot.y} r={2.2}
-            fill="var(--color-text-muted)" opacity="0.28"
+        {/* ── Daily raw entries: faint grey line + area, rendered behind green ── */}
+        {dailyAreaPath && (
+          <path d={dailyAreaPath} fill="var(--color-text-muted)" opacity="0.08" />
+        )}
+        {dailyLinePath && (
+          <path
+            d={dailyLinePath} fill="none"
+            stroke="var(--color-text-muted)" strokeWidth="1.5"
+            strokeLinecap="round" strokeLinejoin="round"
+            opacity="0.3"
           />
-        ))}
+        )}
 
         {/* Area fill */}
         {pts.length > 1 && <path d={areaPath} fill="url(#chart-area-grad)" />}

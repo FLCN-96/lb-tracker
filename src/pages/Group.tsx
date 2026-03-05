@@ -1,4 +1,14 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+
+function FloppyIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+      <polyline points="17,21 17,13 7,13 7,21"/>
+      <polyline points="7,3 7,8 15,8"/>
+    </svg>
+  )
+}
 import { useGroupSnapshot } from '@/hooks/useWeightData'
 import { useAppStore } from '@/store/useAppStore'
 import { formatWeight, formatDelta } from '@/utils/weightCalc'
@@ -21,8 +31,39 @@ export default function Group() {
   const [showAdd, setShowAdd] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [syncFlash, setSyncFlash] = useState<'ok' | 'err' | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveFlash, setSaveFlash] = useState<'ok' | 'err' | null>(null)
 
   const ghConfig = storage.loadGitHubConfig()
+
+  async function handleSave() {
+    if (!ghConfig?.token) return
+    setSaving(true)
+    setSaveFlash(null)
+    try {
+      const cfg = { token: ghConfig.token, repo: ghConfig.repo }
+      const { users: remoteUsers, sha: usersSha } = await fetchUsers(cfg)
+      const { users: localUsers, entries: localEntries } = useAppStore.getState()
+      const entryShas: Record<string, string | null> = {}
+      for (const u of localUsers) {
+        const { sha } = await fetchEntries(cfg, u.id)
+        entryShas[u.id] = sha
+      }
+      await pushUsers(cfg, localUsers, usersSha)
+      for (const u of localUsers) {
+        const ue = localEntries.filter((e) => e.userId === u.id)
+        await pushEntries(cfg, u.id, ue, entryShas[u.id] ?? null, u.name)
+      }
+      storage.saveGitHubConfig({ ...ghConfig, lastSynced: new Date().toISOString() })
+      setSaveFlash('ok')
+      setTimeout(() => setSaveFlash(null), 2000)
+    } catch {
+      setSaveFlash('err')
+      setTimeout(() => setSaveFlash(null), 3000)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   async function handleSync() {
     if (!ghConfig?.token) return
@@ -70,17 +111,28 @@ export default function Group() {
         </div>
 
         {ghConfig?.token && (
-          <button
-            className={`btn-sync${syncing ? ' btn-sync--spin' : ''}${
-              syncFlash === 'ok' ? ' btn-sync--ok' : syncFlash === 'err' ? ' btn-sync--err' : ''
-            }`}
-            onClick={handleSync}
-            disabled={syncing}
-            aria-label="Replace local data with GitHub data"
-            title="Pull from GitHub (replaces local data)"
-          >
-            ↻
-          </button>
+          <div className="header-actions">
+            <button
+              className={`btn-icon${saveFlash === 'ok' ? ' btn-icon--saved' : saveFlash === 'err' ? ' btn-icon--err' : ''}`}
+              onClick={handleSave}
+              disabled={saving}
+              aria-label="Push members to GitHub"
+              title="Save to GitHub"
+            >
+              {saving ? '…' : saveFlash === 'ok' ? '✓' : <FloppyIcon />}
+            </button>
+            <button
+              className={`btn-sync${syncing ? ' btn-sync--spin' : ''}${
+                syncFlash === 'ok' ? ' btn-sync--ok' : syncFlash === 'err' ? ' btn-sync--err' : ''
+              }`}
+              onClick={handleSync}
+              disabled={syncing}
+              aria-label="Replace local data with GitHub data"
+              title="Pull from GitHub (replaces local data)"
+            >
+              ↻
+            </button>
+          </div>
         )}
       </header>
 
