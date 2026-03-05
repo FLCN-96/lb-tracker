@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
 function FloppyIcon() {
   return (
@@ -20,7 +20,9 @@ import {
 import type { GitHubConfig } from '@/services/github'
 import type { Gender } from '@/types'
 
-type EditTarget = { id: string; date: string; weight: number; note: string | null }
+type ModalView =
+  | { kind: 'list' }
+  | { kind: 'edit'; id: string; date: string; weight: number }
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
 
@@ -32,9 +34,8 @@ export default function Settings() {
   const removeEntry = useAppStore((s) => s.removeEntry)
   const mergeData = useAppStore((s) => s.mergeData)
 
-  const [editTarget, setEditTarget] = useState<EditTarget | null>(null)
+  const [entriesModal, setEntriesModal] = useState<ModalView | null>(null)
   const [editWeight, setEditWeight] = useState('')
-  const [editNote, setEditNote] = useState('')
   const [editSaved, setEditSaved] = useState(false)
 
   // Body & goal settings
@@ -106,30 +107,39 @@ export default function Settings() {
     .filter((e) => e.userId === user.id)
     .sort((a, b) => b.date.localeCompare(a.date))
 
-  function openEdit(entry: (typeof userEntries)[0]) {
-    setEditTarget({ id: entry.id, date: entry.date, weight: entry.weight, note: entry.note })
-    setEditWeight(String(entry.weight))
-    setEditNote(entry.note ?? '')
+  // Group by month key "YYYY-MM", sorted newest first
+  const entryMonths = useMemo(() => {
+    const groups = new Map<string, typeof userEntries>()
+    for (const e of userEntries) {
+      const key = e.date.slice(0, 7)
+      groups.set(key, [...(groups.get(key) ?? []), e])
+    }
+    return [...groups.entries()].sort((a, b) => b[0].localeCompare(a[0]))
+  }, [userEntries])
+
+  function openEdit(e: { id: string; date: string; weight: number }) {
+    setEntriesModal({ kind: 'edit', id: e.id, date: e.date, weight: e.weight })
+    setEditWeight(String(e.weight))
     setEditSaved(false)
   }
 
   function handleSaveEntry() {
-    if (!editTarget) return
+    if (!entriesModal || entriesModal.kind !== 'edit') return
     const w = parseFloat(editWeight)
     if (isNaN(w) || w <= 0) return
-    updateEntry(editTarget.id, w, editNote || undefined)
+    updateEntry(entriesModal.id, w)
     setEditSaved(true)
     setTimeout(() => {
-      setEditTarget(null)
+      setEntriesModal({ kind: 'list' })
       setEditSaved(false)
-    }, 800)
+    }, 700)
   }
 
   function handleDeleteEntry() {
-    if (!editTarget) return
+    if (!entriesModal || entriesModal.kind !== 'edit') return
     if (!confirm('Delete this entry? This cannot be undone.')) return
-    removeEntry(editTarget.id)
-    setEditTarget(null)
+    removeEntry(entriesModal.id)
+    setEntriesModal({ kind: 'list' })
   }
 
   function handleSaveSettings(e?: React.FormEvent) {
@@ -332,30 +342,15 @@ export default function Settings() {
       {/* ── Modify values ── */}
       <section className="section">
         <div className="section-title">Modify values</div>
-
         {userEntries.length === 0 ? (
           <p className="empty-state">No entries yet.</p>
         ) : (
-          <ul className="entry-scroll-list">
-            {userEntries.map((entry) => (
-              <li key={entry.id}>
-                <button
-                  className="entry-item"
-                  style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                  onClick={() => openEdit(entry)}
-                >
-                  <div className="entry-item__date">
-                    <div className="entry-item__date-main">{formatDisplayDate(entry.date)}</div>
-                    <div className="entry-item__date-day">{formatDayName(entry.date)}</div>
-                  </div>
-                  <span className="entry-item__weight">
-                    {entry.weight.toFixed(1)} {user.unit}
-                  </span>
-                  <span className="entry-item__chevron">›</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          <button
+            className="btn btn--ghost btn--full"
+            onClick={() => setEntriesModal({ kind: 'list' })}
+          >
+            View all {userEntries.length} entr{userEntries.length === 1 ? 'y' : 'ies'}
+          </button>
         )}
       </section>
 
@@ -437,58 +432,83 @@ export default function Settings() {
         </div>
       </section>
 
-      {/* ── Edit sheet ── */}
-      {editTarget && (
+      {/* ── Entries modal (list → edit) ── */}
+      {entriesModal && (
         <div
-          className="sheet-overlay"
-          onClick={(e) => { if (e.target === e.currentTarget) setEditTarget(null) }}
+          className="modal-overlay"
+          onClick={(e) => { if (e.target === e.currentTarget) setEntriesModal(null) }}
         >
-          <div className="sheet" role="dialog" aria-modal="true">
-            <div className="sheet-handle" />
-            <div className="edit-entry-form">
-              <div className="edit-entry-date">{formatDisplayDate(editTarget.date)}</div>
-              <div className="edit-entry-weight">
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  step="0.1"
-                  className="edit-weight-input"
-                  value={editWeight}
-                  onChange={(e) => setEditWeight(e.target.value)}
-                  autoFocus
-                />
-                <span className="edit-weight-unit">{user.unit}</span>
-              </div>
+          <div className="modal-dialog modal-dialog--tall" role="dialog" aria-modal="true">
 
-              <div className="form-group">
-                <label className="form-label">Note <span className="form-label__optional">(optional)</span></label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. morning, after workout"
-                  value={editNote}
-                  onChange={(e) => setEditNote(e.target.value)}
-                  maxLength={120}
-                />
-              </div>
+            {entriesModal.kind === 'list' ? (
+              <>
+                <h2 className="sheet-title">All Entries</h2>
+                <div className="entries-modal-list">
+                  {entryMonths.map(([monthKey, monthEntries]) => (
+                    <div key={monthKey}>
+                      <div className="entries-month-header">{formatMonth(monthKey)}</div>
+                      {monthEntries.map((e) => (
+                        <button
+                          key={e.id}
+                          className="entry-item"
+                          onClick={() => openEdit(e)}
+                        >
+                          <div className="entry-item__date">
+                            <div className="entry-item__date-main">{formatDisplayDate(e.date)}</div>
+                            <div className="entry-item__date-day">{formatDayName(e.date)}</div>
+                          </div>
+                          <span className="entry-item__weight">{e.weight.toFixed(1)} {user.unit}</span>
+                          <span className="entry-item__chevron">›</span>
+                        </button>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                <button className="btn btn--ghost btn--full" onClick={() => setEntriesModal(null)}>
+                  Close
+                </button>
+              </>
+            ) : (
+              <>
+                <h2 className="sheet-title">{formatDisplayDate(entriesModal.date)}</h2>
+                <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--color-text-muted)' }}>
+                  {formatDayName(entriesModal.date)}
+                </p>
+                <div className="edit-entry-weight" style={{ marginBottom: 20 }}>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.1"
+                    className="edit-weight-input"
+                    value={editWeight}
+                    onChange={(e) => setEditWeight(e.target.value)}
+                    autoFocus
+                  />
+                  <span className="edit-weight-unit">{user.unit}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn btn--danger" onClick={handleDeleteEntry}>Delete</button>
+                  <button className="btn btn--ghost" onClick={() => setEntriesModal({ kind: 'list' })}>← Back</button>
+                  <button
+                    className={`btn btn--full ${editSaved ? 'btn--saved' : 'btn--primary'}`}
+                    onClick={handleSaveEntry}
+                  >
+                    {editSaved ? 'Saved ✓' : 'Save'}
+                  </button>
+                </div>
+              </>
+            )}
 
-              <div className="edit-entry-actions">
-                <button className="btn btn--danger btn--sm" onClick={handleDeleteEntry}>
-                  Delete
-                </button>
-                <button
-                  className={`btn ${editSaved ? 'btn--saved' : 'btn--primary'} btn--full`}
-                  onClick={handleSaveEntry}
-                >
-                  {editSaved ? 'Saved ✓' : 'Save'}
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       )}
     </div>
   )
+}
+
+function formatMonth(monthKey: string): string {
+  const [y, m] = monthKey.split('-').map(Number)
+  return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
 }
 
 function formatDisplayDate(dateStr: string): string {

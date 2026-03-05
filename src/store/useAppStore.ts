@@ -30,6 +30,18 @@ interface AppActions {
 
 type AppStore = AppState & AppActions
 
+// ── Ensure every User object has all current fields (one-time migration) ──────
+// Add new required fields here; existing values are preserved via spread.
+function patchUser(u: User): User {
+  return {
+    heightIn: null,
+    gender: null,
+    favoriteColor: null,
+    weekStartDay: 1 as const,
+    ...u,
+  }
+}
+
 export const useAppStore = create<AppStore>((set, get) => ({
   // ── Initial state ──────────────────────────────────────────────────────────
   activeUserId: null,
@@ -41,14 +53,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const users = storage.loadUsers()
     const entries = storage.loadEntries()
     const activeUserId = storage.loadActiveUserId()
-    // Patch any legacy users missing the new fields
-    const patched = users.map((u) => ({
-      heightIn: null,
-      gender: null,
-      favoriteColor: null,
-      weekStartDay: 1 as const,
-      ...u,
-    }))
+    const patched = users.map(patchUser)
+    // Write patched users back so legacy format is upgraded on first load.
+    storage.saveUsers(patched)
     set({ users: patched, entries, activeUserId })
   },
 
@@ -144,13 +151,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     for (const u of localUsers) userMap.set(u.id, u)  // local overwrites remote for same ID
 
     // Patch any legacy fields missing from remote-only users
-    const users = [...userMap.values()].map((u) => ({
-      heightIn: null,
-      gender: null,
-      favoriteColor: null,
-      weekStartDay: 1 as const,
-      ...u,
-    }))
+    const users = [...userMap.values()].map(patchUser)
 
     // Entries: remote wins for same ID (picks up edits from other devices),
     // local-only entries (not yet pushed) are kept.
@@ -180,8 +181,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       newActiveId = remoteUsers[0]?.id ?? null
     }
 
-    // Patch any missing new fields on remote users
-    const patched = remoteUsers.map((u) => ({ heightIn: null, gender: null, favoriteColor: null, weekStartDay: 1 as const, ...u }))
+    const patched = remoteUsers.map(patchUser)
 
     set({ users: patched, entries: remoteEntries, activeUserId: newActiveId })
     storage.saveUsers(patched)
