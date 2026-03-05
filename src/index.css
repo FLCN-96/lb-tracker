@@ -875,6 +875,114 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   letter-spacing: 0.01em;
 }
 
+/* ─── Stats Lab ──────────────────────────────────────────────────────────── */
+.stats-lab {
+  background: var(--color-bg-alt);
+  border-radius: var(--radius-md);
+  padding: 12px 14px 14px;
+  font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace;
+  font-size: 12px;
+}
+.sl-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 6px;
+}
+.sl-divider:first-child { margin-top: 2px; }
+.sl-divider__label {
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.sl-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+.sl-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 2px 0;
+}
+.sl-key {
+  color: var(--color-text-muted);
+  min-width: 74px;
+  flex-shrink: 0;
+}
+.sl-rhs {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.sl-val {
+  color: var(--color-text);
+  font-weight: 600;
+  text-align: right;
+}
+.sl-sig {
+  font-weight: 800;
+  font-size: 11px;
+  color: var(--color-primary);
+  min-width: 26px;
+  text-align: right;
+}
+.sl-sig--ns {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+.sl-footnote {
+  margin-top: 7px;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  letter-spacing: 0.01em;
+}
+.sl-acf { margin-top: 4px; }
+.sl-acf__track {
+  position: relative;
+  height: 4px;
+  background: var(--color-border);
+  border-radius: 2px;
+  margin: 4px 0 2px;
+}
+.sl-acf__zero {
+  position: absolute;
+  left: 50%;
+  top: -4px;
+  width: 1px;
+  height: 12px;
+  background: var(--color-text-muted);
+  opacity: 0.4;
+}
+.sl-acf__dot {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+.sl-acf__labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  opacity: 0.75;
+}
+.sl-acf__interp {
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin-top: 5px;
+  letter-spacing: 0.01em;
+}
+
 /* ─── Mass Import ────────────────────────────────────────────────────────── */
 .import-textarea {
   width: 100%;

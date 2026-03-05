@@ -2,7 +2,8 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { useAppStore, selectActiveUser } from '@/store/useAppStore'
 import { storage } from '@/services/storage'
 import { fetchUsers, fetchEntries, pushUsers, pushEntries } from '@/services/github'
-import { computeWeeklyAverages, computeTrend } from '@/utils/weightCalc'
+import { computeWeeklyAverages, computeTrend, computeOLS, computeDescriptives } from '@/utils/weightCalc'
+import type { OLSResult, DescriptiveStats } from '@/utils/weightCalc'
 import type { Gender } from '@/types'
 
 // ─── BMI helpers ──────────────────────────────────────────────────────────────
@@ -106,6 +107,9 @@ export default function Profile() {
     [user.id, entries, user.weekStartDay],
   )
   const trend = useMemo(() => computeTrend(weeklyAverages), [weeklyAverages])
+
+  const ols  = useMemo(() => computeOLS(weeklyAverages),         [weeklyAverages])
+  const desc = useMemo(() => computeDescriptives(weeklyAverages), [weeklyAverages])
 
   const trendGoalDate = useMemo(() => {
     if (!trend || !user.goalWeight || !recentWeight) return null
@@ -352,6 +356,118 @@ export default function Profile() {
             ? 'Enter height in Settings to see BMI analysis.'
             : 'Log a weight entry to see BMI analysis.'}
         </p>
+      )}
+
+      {/* ── Stats Lab ── */}
+      {(ols || desc) && (
+        <section className="section">
+          <div className="section-title">Stats Lab</div>
+          <StatsLab ols={ols} desc={desc} unit={user.unit} />
+        </section>
+      )}
+    </div>
+  )
+}
+
+// ─── Stats Lab helpers ────────────────────────────────────────────────────────
+
+function sigCode(p: number): string {
+  if (p < 0.001) return '***'
+  if (p < 0.01)  return '**'
+  if (p < 0.05)  return '*'
+  return 'ns'
+}
+
+function fmtP(p: number): string {
+  return p < 0.0001 ? '< 0.0001' : p.toFixed(4)
+}
+
+function fmtSigned(v: number, decimals = 2): string {
+  return `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(decimals)}`
+}
+
+function acfLabel(r: number): string {
+  const a = Math.abs(r)
+  if (a < 0.2) return 'White noise — no autocorrelation'
+  const dir = r > 0 ? 'persistence' : 'oscillation'
+  if (a < 0.5) return `Weak ${dir}`
+  if (a < 0.8) return `Moderate ${dir}`
+  return `Strong ${dir}`
+}
+
+function SlRow({ k, v, sig }: { k: string; v: React.ReactNode; sig?: string }) {
+  const ns = sig === 'ns'
+  return (
+    <div className="sl-row">
+      <span className="sl-key">{k}</span>
+      <span className="sl-rhs">
+        <span className="sl-val">{v}</span>
+        {sig && <span className={`sl-sig${ns ? ' sl-sig--ns' : ''}`}>{sig}</span>}
+      </span>
+    </div>
+  )
+}
+
+function SlDivider({ label }: { label?: string }) {
+  return <div className="sl-divider">{label && <span className="sl-divider__label">{label}</span>}</div>
+}
+
+function AcfBar({ r }: { r: number }) {
+  const pct = `${Math.max(4, Math.min(96, ((r + 1) / 2) * 100)).toFixed(1)}%`
+  return (
+    <div className="sl-acf">
+      <div className="sl-row" style={{ marginBottom: 4 }}>
+        <span className="sl-key">ρ(1)</span>
+        <span className="sl-rhs"><span className="sl-val">{fmtSigned(r)}</span></span>
+      </div>
+      <div className="sl-acf__track">
+        <div className="sl-acf__zero" />
+        <div className="sl-acf__dot" style={{ left: pct }} />
+      </div>
+      <div className="sl-acf__labels"><span>−1</span><span>0</span><span>+1</span></div>
+      <div className="sl-acf__interp">{acfLabel(r)}</div>
+    </div>
+  )
+}
+
+function StatsLab({
+  ols, desc, unit,
+}: {
+  ols: OLSResult | null
+  desc: DescriptiveStats | null
+  unit: import('@/types').WeightUnit
+}) {
+  const u = unit
+  return (
+    <div className="stats-lab">
+      {ols && (
+        <>
+          <SlDivider label={`OLS: weight ~ week  (n = ${ols.n})`} />
+          <SlRow k="slope"   v={`${fmtSigned(ols.slope)} ${u}/wk`}                              sig={sigCode(ols.pValue)} />
+          <SlRow k="95% CI"  v={`[${fmtSigned(ols.ci95[0])}, ${fmtSigned(ols.ci95[1])}] ${u}`} />
+          <SlRow k="p-value" v={fmtP(ols.pValue)} />
+          <SlRow k="t-stat"  v={`${fmtSigned(ols.tStat)}  (df\u202f=\u202f${ols.n - 2})`} />
+          <SlRow k="R²"      v={ols.r2.toFixed(3)} />
+          <SlRow k="adj. R²" v={ols.adjR2.toFixed(3)} />
+          <SlRow k="RSE"     v={`${ols.rse.toFixed(2)} ${u}`} />
+          <div className="sl-footnote">Sig. codes:&nbsp; *** p&lt;0.001 &nbsp; ** p&lt;0.01 &nbsp; * p&lt;0.05 &nbsp; ns p≥0.05</div>
+        </>
+      )}
+      {desc && (
+        <>
+          <SlDivider label="Descriptives" />
+          <SlRow k="mean"      v={`${desc.mean.toFixed(2)} ${u}`} />
+          <SlRow k="σ  (SD)"   v={`${desc.sd.toFixed(2)} ${u}`} />
+          <SlRow k="CV"        v={`${desc.cv.toFixed(1)}%`} />
+          <SlRow k="range"     v={`${desc.range.toFixed(2)} ${u}  (${desc.min}–${desc.max})`} />
+          {desc.skewness !== null && <SlRow k="skewness" v={fmtSigned(desc.skewness)} />}
+        </>
+      )}
+      {desc?.acf1 != null && (
+        <>
+          <SlDivider label="Autocorrelation (lag-1)" />
+          <AcfBar r={desc.acf1} />
+        </>
       )}
     </div>
   )
