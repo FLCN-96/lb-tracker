@@ -30,6 +30,7 @@ export default function Settings() {
   const user = useAppStore(selectActiveUser)
   const entries = useAppStore((s) => s.entries)
   const updateUser = useAppStore((s) => s.updateUser)
+  const addEntry = useAppStore((s) => s.addEntry)
   const updateEntry = useAppStore((s) => s.updateEntry)
   const removeEntry = useAppStore((s) => s.removeEntry)
   const mergeData = useAppStore((s) => s.mergeData)
@@ -51,6 +52,10 @@ export default function Settings() {
   const [weekStartDay, setWeekStartDay] = useState<number>(user?.weekStartDay ?? 1)
   const [settingsSaved, setSettingsSaved] = useState(false)
   const [syncVersion, setSyncVersion] = useState(0)
+
+  // Mass import
+  const [importText, setImportText] = useState('')
+  const [importResult, setImportResult] = useState<{ added: number; skipped: number } | null>(null)
 
   // Keep form in sync when the store is updated externally (e.g. after a sync).
   // syncVersion is bumped after every sync so the form resets even when the
@@ -157,6 +162,25 @@ export default function Settings() {
     })
     setSettingsSaved(true)
     setTimeout(() => setSettingsSaved(false), 1500)
+  }
+
+  function handleImport() {
+    const lines = importText.split('\n').map((l) => l.trim()).filter(Boolean)
+    let added = 0
+    let skipped = 0
+    for (const line of lines) {
+      const comma = line.indexOf(',')
+      if (comma === -1) { skipped++; continue }
+      const datePart = line.slice(0, comma).trim()
+      const weightPart = line.slice(comma + 1).trim()
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) { skipped++; continue }
+      const w = parseFloat(weightPart)
+      if (isNaN(w) || w < 20 || w > 1500) { skipped++; continue }
+      addEntry(user.id, w, datePart)
+      added++
+    }
+    setImportResult({ added, skipped })
+    if (added > 0) setImportText('')
   }
 
   async function handleSync() {
@@ -351,6 +375,38 @@ export default function Settings() {
           >
             View all {userEntries.length} entr{userEntries.length === 1 ? 'y' : 'ies'}
           </button>
+        )}
+      </section>
+
+      {/* ── Mass Import ── */}
+      <section className="section">
+        <div className="section-title">Import Records</div>
+        <p className="sync-hint">
+          Paste one record per line in the format <code>yyyy-mm-dd,weight</code>:
+        </p>
+        <textarea
+          className="import-textarea"
+          rows={6}
+          spellCheck={false}
+          placeholder={`2025-01-20,234.6\n2025-01-27,234.4\n2025-02-03,233.1`}
+          value={importText}
+          onChange={(e) => { setImportText(e.target.value); setImportResult(null) }}
+        />
+        <button
+          type="button"
+          className="btn btn--primary btn--full"
+          style={{ marginTop: 8 }}
+          onClick={handleImport}
+          disabled={!importText.trim()}
+        >
+          Import
+        </button>
+        {importResult && (
+          <p className={importResult.added > 0 ? 'sync-ok' : 'sync-error'} style={{ marginTop: 8 }}>
+            {importResult.added > 0
+              ? `Imported ${importResult.added} entr${importResult.added === 1 ? 'y' : 'ies'}${importResult.skipped > 0 ? ` · ${importResult.skipped} skipped` : ''}`
+              : `Nothing imported · ${importResult.skipped} line${importResult.skipped === 1 ? '' : 's'} couldn't be parsed`}
+          </p>
         )}
       </section>
 
