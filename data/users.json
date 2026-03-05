@@ -3,6 +3,7 @@
     "heightIn": 75,
     "gender": "male",
     "favoriteColor": "#6ebe14",
+    "weekStartDay": 1,
     "id": "2ce92d0b-fe0f-4b05-bed6-5ecd6acd1a67",
     "name": "Jose",
     "emoji": "🦜",
@@ -10,18 +11,5 @@
     "startingWeight": 194.8,
     "goalWeight": 160,
     "createdAt": "2026-03-04T22:28:12.693Z"
-  },
-  {
-    "id": "0ff456b7-f0ae-4f17-ac81-9be60f12d143",
-    "name": "P",
-    "emoji": "🐸",
-    "unit": "lbs",
-    "startingWeight": null,
-    "goalWeight": null,
-    "heightIn": null,
-    "gender": null,
-    "favoriteColor": null,
-    "weekStartDay": 1,
-    "createdAt": "2026-03-05T09:38:14.546Z"
   }
 ]
