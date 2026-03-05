@@ -982,6 +982,31 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   margin-top: 5px;
   letter-spacing: 0.01em;
 }
+/* Non-parametric test sub-labels */
+.sl-test-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  margin-bottom: 3px;
+  padding-top: 2px;
+}
+/* Diagnostic plot wrappers */
+.sl-plot-wrap {
+  margin-top: 8px;
+}
+.sl-plot-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  margin-bottom: 3px;
+  text-transform: uppercase;
+}
+.sl-plot {
+  display: block;
+  overflow: visible;
+}
 
 /* ─── Mass Import ────────────────────────────────────────────────────────── */
 .import-textarea {
