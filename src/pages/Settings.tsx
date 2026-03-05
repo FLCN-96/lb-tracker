@@ -39,6 +39,11 @@ export default function Settings() {
   const [startW, setStartW] = useState(user?.startingWeight?.toString() ?? '')
   const [settingsSaved, setSettingsSaved] = useState(false)
 
+  // Dirty: compare current inputs to stored user values
+  const settingsDirty =
+    goalW  !== (user?.goalWeight?.toString()    ?? '') ||
+    startW !== (user?.startingWeight?.toString() ?? '')
+
   // GitHub sync
   const stored = storage.loadGitHubConfig()
   const [ghRepo, setGhRepo] = useState(stored?.repo ?? 'FLCN-96/lb-tracker')
@@ -160,7 +165,7 @@ export default function Settings() {
         </div>
         <div className="header-actions">
           <button
-            className={`btn-icon${settingsSaved ? ' btn-icon--saved' : ''}`}
+            className={`btn-icon${settingsSaved ? ' btn-icon--saved' : settingsDirty ? ' btn-icon--pulse' : ''}`}
             onClick={(e) => handleSaveSettings(e as unknown as React.FormEvent)}
             aria-label="Save settings"
             title="Save settings"

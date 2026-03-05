@@ -149,8 +149,7 @@ export default function Dashboard() {
 
             <button
               type="submit"
-              className={`btn ${logSaved ? 'btn--saved' : 'btn--primary'}`}
-              style={{ minWidth: 72, padding: '12px 16px' }}
+              className={`btn log-save-btn ${logSaved ? 'btn--saved' : `btn--primary${weightInput ? ' btn--pulse' : ''}`}`}
               disabled={!weightInput}
             >
               {logSaved ? '✓' : 'Save'}

@@ -215,8 +215,13 @@ html.ios-standalone #root {
 }
 
 .page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
   margin-bottom: var(--space-lg);
 }
+.page-header > div:first-child { flex: 1; min-width: 0; }
 
 .page-title {
   font-size: 26px;
@@ -838,6 +843,23 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .btn--full      { width: 100%; }
 .btn--sm        { font-size: 13px; padding: 8px 14px; }
 .btn--saved     { background: var(--color-down); color: white; }
+
+/* Pulsing glow on filled buttons (e.g. Home quick-log Save) when input is dirty */
+@keyframes pulse-save-filled {
+  0%, 100% { box-shadow: var(--shadow-sm), 0 0 0 0   color-mix(in srgb, var(--color-primary) 55%, transparent); }
+  55%       { box-shadow: var(--shadow-sm), 0 0 0 7px color-mix(in srgb, var(--color-primary) 0%,  transparent); }
+}
+.btn--pulse {
+  animation: pulse-save-filled 1.6s ease-in-out infinite;
+}
+
+/* Log save button — match height of the large number input */
+.log-save-btn {
+  align-self: stretch;
+  min-width: 80px;
+  font-size: 17px;
+  padding: 0 20px;
+}
 
 /* ─── Emoji login screen ─────────────────────────────────────────────────── */
 .login-screen {
