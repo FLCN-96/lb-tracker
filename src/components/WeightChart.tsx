@@ -17,7 +17,7 @@ const TF_OPTIONS: { label: string; value: TimeFrame }[] = [
   { label: '1M', value: '1m' },
 ]
 
-const PAD = { top: 18, right: 12, bottom: 28, left: 44 }
+const PAD = { top: 18, right: 14, bottom: 28, left: 34 }
 const VB_W = 360
 
 export default function WeightChart({ data, unit, height = 180, dailyEntries = [] }: Props) {

@@ -16,7 +16,7 @@ const TF_OPTIONS: { label: string; value: TimeFrame }[] = [
   { label: '1M', value: '1m' },
 ]
 
-const PAD = { top: 24, right: 48, bottom: 28, left: 44 }
+const PAD = { top: 24, right: 28, bottom: 28, left: 34 }
 const VB_W = 360
 
 interface SeriesData {
