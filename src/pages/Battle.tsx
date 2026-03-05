@@ -189,14 +189,6 @@ export default function Battle() {
 
   const activeSeries = series.filter((s) => s.averages.length > 0)
 
-  if (users.length < 2) {
-    return (
-      <div className="page page--centered">
-        <p className="empty-state">Battle needs at least 2 profiles.</p>
-      </div>
-    )
-  }
-
   return (
     <div className="page">
       <header className="page-header">
@@ -216,25 +208,29 @@ export default function Battle() {
         ))}
       </div>
 
-      {activeSeries.length < 2 ? (
-        <p className="empty-state" style={{ marginTop: 24 }}>
-          Log data for at least 2 members to see the charts.
+      {activeSeries.length < 2 && (
+        <p className="empty-state" style={{ marginTop: 4, marginBottom: 20 }}>
+          {activeSeries.length === 0
+            ? 'No entries logged yet.'
+            : 'Log data for at least 2 members to unlock head-to-head charts.'}
         </p>
-      ) : (
-        <>
-          <section className="section">
-            <div className="section-title">Weekly Averages</div>
-            <BattleChart series={series} height={210} />
-          </section>
+      )}
 
-          <section className="section">
-            <div className="section-title">Progress from Start</div>
-            <p className="sync-hint" style={{ marginBottom: 8 }}>
-              Normalized to each person's starting weight — negative = weight lost.
-            </p>
-            <BattleChart series={series} height={210} normalize />
-          </section>
-        </>
+      {activeSeries.length >= 2 && (
+        <section className="section">
+          <div className="section-title">Weekly Averages</div>
+          <BattleChart series={series} height={210} />
+        </section>
+      )}
+
+      {activeSeries.length >= 1 && (
+        <section className="section">
+          <div className="section-title">Progress from Start</div>
+          <p className="sync-hint" style={{ marginBottom: 8 }}>
+            Normalized to each person's starting weight — negative = weight lost.
+          </p>
+          <BattleChart series={series} height={210} normalize />
+        </section>
       )}
     </div>
   )

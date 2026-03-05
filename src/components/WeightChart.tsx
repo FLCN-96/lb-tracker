@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import type { WeeklyAverage, WeightEntry, WeightUnit } from '@/types'
 
 interface Props {
@@ -7,20 +8,73 @@ interface Props {
   dailyEntries?: WeightEntry[]
 }
 
+type TimeFrame = 'all' | '1y' | '6m' | '1m'
+
+const TF_OPTIONS: { label: string; value: TimeFrame }[] = [
+  { label: 'All', value: 'all' },
+  { label: '1Y', value: '1y' },
+  { label: '6M', value: '6m' },
+  { label: '1M', value: '1m' },
+]
+
 const PAD = { top: 18, right: 12, bottom: 28, left: 44 }
 const VB_W = 360
 
 export default function WeightChart({ data, unit, height = 180, dailyEntries = [] }: Props) {
+  const [frame, setFrame] = useState<TimeFrame>('all')
+
+  const cutoffDate = useMemo((): string | null => {
+    if (frame === 'all') return null
+    const d = new Date()
+    if (frame === '1m') d.setMonth(d.getMonth() - 1)
+    else if (frame === '6m') d.setMonth(d.getMonth() - 6)
+    else if (frame === '1y') d.setFullYear(d.getFullYear() - 1)
+    return d.toISOString().split('T')[0]
+  }, [frame])
+
+  const filteredData = useMemo(
+    () => (cutoffDate ? data.filter((d) => d.weekEnd >= cutoffDate!) : data),
+    [data, cutoffDate],
+  )
+
+  const filteredDailyEntries = useMemo(
+    () => (cutoffDate ? dailyEntries.filter((e) => e.date >= cutoffDate!) : dailyEntries),
+    [dailyEntries, cutoffDate],
+  )
+
+  const tfBar = (
+    <div className="chart-tf-bar">
+      {TF_OPTIONS.map((opt) => (
+        <button
+          key={opt.value}
+          className={`chart-tf-btn${frame === opt.value ? ' chart-tf-btn--active' : ''}`}
+          onClick={() => setFrame(opt.value)}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  )
+
   if (data.length < 1) {
     return (
       <div className="chart-wrap">
+        {tfBar}
         <div className="chart-empty">Log entries to see your trend</div>
       </div>
     )
   }
 
-  // If only 1 point, duplicate it so we still render a flat line
-  const pts = data.length === 1 ? [data[0], data[0]] : data
+  if (filteredData.length < 1) {
+    return (
+      <div className="chart-wrap">
+        {tfBar}
+        <div className="chart-empty">No entries in this period</div>
+      </div>
+    )
+  }
+
+  const pts = filteredData.length === 1 ? [filteredData[0], filteredData[0]] : filteredData
   const weights = pts.map((d) => d.average)
   const minW = Math.min(...weights)
   const maxW = Math.max(...weights)
@@ -33,24 +87,10 @@ export default function WeightChart({ data, unit, height = 180, dailyEntries = [
   const innerW = VB_W - PAD.left - PAD.right
   const innerH = height - PAD.top - PAD.bottom
 
-  const toX = (i: number) =>
-    PAD.left + (pts.length === 1 ? innerW / 2 : (i / (pts.length - 1)) * innerW)
   const toY = (w: number) =>
     PAD.top + (1 - (w - paddedMin) / (paddedMax - paddedMin)) * innerH
 
-  const svgPts = pts.map((d, i) => ({ x: toX(i), y: toY(d.average), d }))
-
-  const linePath = catmullRomPath(svgPts)
-  const bottomY = PAD.top + innerH
-  const areaPath = `${linePath} L ${svgPts[svgPts.length - 1].x},${bottomY} L ${svgPts[0].x},${bottomY} Z`
-
-  // Y-axis: 3 labels
-  const yTicks = [paddedMax, (paddedMax + paddedMin) / 2, paddedMin]
-
-  // X-axis: up to 5 labels
-  const xLabelIdxs = selectLabelIndices(pts.length, 5)
-
-  // Daily dots: map date → X using the full date range of the chart
+  // Unified time-based X — both green and grey use the same scale
   const startMs = new Date(pts[0].weekStart + 'T12:00:00Z').getTime()
   const endMs = new Date(pts[pts.length - 1].weekEnd + 'T12:00:00Z').getTime()
   const msRange = endMs - startMs
@@ -61,8 +101,18 @@ export default function WeightChart({ data, unit, height = 180, dailyEntries = [
     return PAD.left + ((t - startMs) / msRange) * innerW
   }
 
-  // Sort daily entries by date and build SVG points for the faint grey line
-  const sortedDailyEntries = [...dailyEntries]
+  // Weekly avg line: positioned at each week's start date on the shared time axis
+  const svgPts = pts.map((d) => ({ x: dateToX(d.weekStart), y: toY(d.average), d }))
+
+  const linePath = catmullRomPath(svgPts)
+  const bottomY = PAD.top + innerH
+  const areaPath = `${linePath} L ${svgPts[svgPts.length - 1].x},${bottomY} L ${svgPts[0].x},${bottomY} Z`
+
+  const yTicks = [paddedMax, (paddedMax + paddedMin) / 2, paddedMin]
+  const xLabelIdxs = selectLabelIndices(pts.length, 5)
+
+  // Daily entries on the same time axis, clipped to the filtered range
+  const sortedDailyEntries = [...filteredDailyEntries]
     .filter((e) => {
       const t = new Date(e.date + 'T12:00:00Z').getTime()
       return t >= startMs && t <= endMs
@@ -75,12 +125,17 @@ export default function WeightChart({ data, unit, height = 180, dailyEntries = [
   }))
 
   const dailyLinePath = dailyPts.length >= 2 ? catmullRomPath(dailyPts) : null
-  const dailyAreaPath = dailyLinePath && dailyPts.length >= 2
-    ? `${dailyLinePath} L ${dailyPts[dailyPts.length - 1].x},${bottomY} L ${dailyPts[0].x},${bottomY} Z`
-    : null
+  const dailyAreaPath =
+    dailyLinePath && dailyPts.length >= 2
+      ? `${dailyLinePath} L ${dailyPts[dailyPts.length - 1].x},${bottomY} L ${dailyPts[0].x},${bottomY} Z`
+      : null
+
+  const last = svgPts[svgPts.length - 1]
+  const labelY = last.y < PAD.top + 18 ? last.y + 16 : last.y - 10
 
   return (
     <div className="chart-wrap">
+      {tfBar}
       <svg
         viewBox={`0 0 ${VB_W} ${height}`}
         width="100%"
@@ -132,7 +187,7 @@ export default function WeightChart({ data, unit, height = 180, dailyEntries = [
           </text>
         ))}
 
-        {/* ── Daily raw entries: faint grey line + area, rendered behind green ── */}
+        {/* Daily raw: faint grey area + line (rendered behind green) */}
         {dailyAreaPath && (
           <path d={dailyAreaPath} fill="var(--color-text-muted)" opacity="0.08" />
         )}
@@ -145,7 +200,7 @@ export default function WeightChart({ data, unit, height = 180, dailyEntries = [
           />
         )}
 
-        {/* Area fill */}
+        {/* Green area fill */}
         {pts.length > 1 && <path d={areaPath} fill="url(#chart-area-grad)" />}
 
         {/* Weekly average line */}
@@ -155,36 +210,28 @@ export default function WeightChart({ data, unit, height = 180, dailyEntries = [
           strokeLinecap="round" strokeLinejoin="round"
         />
 
-        {/* Weekly data point dots */}
-        {svgPts.map((p, i) => (
-          <circle
-            key={i} cx={p.x} cy={p.y}
-            r={i === svgPts.length - 1 ? 5 : 3.5}
-            fill={i === svgPts.length - 1 ? 'var(--color-primary)' : 'var(--color-surface)'}
-            stroke="var(--color-primary)" strokeWidth="2"
-          />
-        ))}
+        {/* Single filled dot at the most recent point only */}
+        <circle
+          cx={last.x} cy={last.y}
+          r={5}
+          fill="var(--color-primary)"
+          stroke="var(--color-primary)" strokeWidth="2"
+        />
 
         {/* Latest value label */}
-        {svgPts.length > 0 && (() => {
-          const last = svgPts[svgPts.length - 1]
-          const labelY = last.y < PAD.top + 18 ? last.y + 16 : last.y - 10
-          return (
-            <text
-              x={last.x} y={labelY}
-              textAnchor="middle" fontSize="10" fontWeight="700"
-              fill="var(--color-primary)" fontFamily="var(--font-sans)"
-            >
-              {last.d.average.toFixed(1)} {unit}
-            </text>
-          )
-        })()}
+        <text
+          x={last.x} y={labelY}
+          textAnchor="middle" fontSize="10" fontWeight="700"
+          fill="var(--color-primary)" fontFamily="var(--font-sans)"
+        >
+          {last.d.average.toFixed(1)} {unit}
+        </text>
       </svg>
     </div>
   )
 }
 
-// ─── Smooth curve helpers ─────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function catmullRomPath(points: { x: number; y: number }[]): string {
   if (points.length === 0) return ''
