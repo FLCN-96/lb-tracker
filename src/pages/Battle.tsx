@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import { computeWeeklyAverages } from '@/utils/weightCalc'
 import type { User, WeeklyAverage } from '@/types'
@@ -6,6 +6,14 @@ import type { User, WeeklyAverage } from '@/types'
 const FALLBACK_COLORS = [
   '#4f9cf9', '#f97316', '#a855f7', '#10b981',
   '#ef4444', '#eab308', '#6366f1', '#ec4899',
+]
+
+type TimeFrame = 'all' | '1y' | '6m' | '1m'
+const TF_OPTIONS: { label: string; value: TimeFrame }[] = [
+  { label: 'All', value: 'all' },
+  { label: '1Y', value: '1y' },
+  { label: '6M', value: '6m' },
+  { label: '1M', value: '1m' },
 ]
 
 const PAD = { top: 24, right: 48, bottom: 28, left: 44 }
@@ -28,8 +36,47 @@ function BattleChart({
   height?: number
   normalize?: boolean
 }) {
-  const active = series.filter((s) => s.averages.length > 0)
-  if (active.length === 0) return <div className="chart-empty">No data yet</div>
+  const [frame, setFrame] = useState<TimeFrame>('all')
+
+  const cutoffDate = useMemo((): string | null => {
+    if (frame === 'all') return null
+    const d = new Date()
+    if (frame === '1m') d.setMonth(d.getMonth() - 1)
+    else if (frame === '6m') d.setMonth(d.getMonth() - 6)
+    else if (frame === '1y') d.setFullYear(d.getFullYear() - 1)
+    return d.toISOString().split('T')[0]
+  }, [frame])
+
+  const active = useMemo(() => {
+    const withData = series.filter((s) => s.averages.length > 0)
+    if (!cutoffDate) return withData
+    return withData
+      .map((s) => ({ ...s, averages: s.averages.filter((a) => a.weekEnd >= cutoffDate) }))
+      .filter((s) => s.averages.length > 0)
+  }, [series, cutoffDate])
+
+  const tfBar = (
+    <div className="chart-tf-bar">
+      {TF_OPTIONS.map((opt) => (
+        <button
+          key={opt.value}
+          className={`chart-tf-btn${frame === opt.value ? ' chart-tf-btn--active' : ''}`}
+          onClick={() => setFrame(opt.value)}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  )
+
+  if (active.length === 0) {
+    return (
+      <div className="chart-wrap">
+        {tfBar}
+        <div className="chart-empty">No data in this period</div>
+      </div>
+    )
+  }
 
   // Union of all week keys, ascending
   const allWeekKeys = [
@@ -49,13 +96,12 @@ function BattleChart({
   })
 
   const flat = seriesVals.flat().filter((v): v is number => v !== null)
-  if (flat.length === 0) return <div className="chart-empty">No data yet</div>
+  if (flat.length === 0) return <div className="chart-empty">No data in this period</div>
 
   const minV = Math.min(...flat)
   const maxV = Math.max(...flat)
   const rawRange = maxV - minV
   const range = rawRange < 2 ? 4 : rawRange
-  // For normalized chart always include 0 in range
   const paddedMin = normalize ? Math.min(minV - range * 0.12, -1) : minV - range * 0.12
   const paddedMax = normalize ? Math.max(maxV + range * 0.12, 1) : maxV + range * 0.12
 
@@ -74,6 +120,7 @@ function BattleChart({
 
   return (
     <div className="chart-wrap">
+      {tfBar}
       <svg
         viewBox={`0 0 ${VB_W} ${height}`}
         width="100%"
@@ -128,7 +175,7 @@ function BattleChart({
           </text>
         ))}
 
-        {/* Per-user lines + dots + emoji tail */}
+        {/* Per-user lines + final dot + emoji tail */}
         {active.map((s, si) => {
           const pts: { x: number; y: number }[] = []
           for (let i = 0; i < n; i++) {
@@ -147,14 +194,8 @@ function BattleChart({
                 stroke={s.color} strokeWidth="2.5"
                 strokeLinecap="round" strokeLinejoin="round"
               />
-              {pts.map((p, pi) => (
-                <circle
-                  key={pi} cx={p.x} cy={p.y}
-                  r={pi === pts.length - 1 ? 5 : 3}
-                  fill={pi === pts.length - 1 ? s.color : 'var(--color-surface)'}
-                  stroke={s.color} strokeWidth="2"
-                />
-              ))}
+              {/* Single filled dot at the most recent point */}
+              <circle cx={last.x} cy={last.y} r={5} fill={s.color} stroke={s.color} strokeWidth="2" />
               {/* Emoji at the tail */}
               <text
                 x={last.x + 9} y={last.y + 5}
