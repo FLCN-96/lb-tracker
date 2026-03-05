@@ -1,10 +1,8 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAppStore, selectActiveUser } from '@/store/useAppStore'
 import { todayStr } from '@/utils/weightCalc'
 
 export default function LogWeight() {
-  const navigate = useNavigate()
   const user = useAppStore(selectActiveUser)
   const addEntry = useAppStore((s) => s.addEntry)
 

@@ -58,14 +58,16 @@ export default function ExpandLog({ userId, unit, onClose }: Props) {
     for (const row of rows) {
       const raw = values[row.date]
       const w = parseFloat(raw)
+      const valid = raw.trim() !== '' && !isNaN(w) && w >= 20 && w <= 1500
 
       if (row.existingEntryId) {
-        if (!raw || isNaN(w)) {
+        // blank, non-numeric, or out-of-range → treat as "clear this day"
+        if (!valid) {
           removeEntry(row.existingEntryId)
         } else {
           updateEntry(row.existingEntryId, w)
         }
-      } else if (raw && !isNaN(w) && w > 0) {
+      } else if (valid) {
         addEntry(userId, w, row.date)
       }
     }

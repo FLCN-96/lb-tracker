@@ -126,7 +126,7 @@ export default function Settings() {
   function handleSaveEntry() {
     if (!entriesModal || entriesModal.kind !== 'edit') return
     const w = parseFloat(editWeight)
-    if (isNaN(w) || w <= 0) return
+    if (isNaN(w) || w < 20 || w > 1500) return
     updateEntry(entriesModal.id, w)
     setEditSaved(true)
     setTimeout(() => {
@@ -479,6 +479,8 @@ export default function Settings() {
                     type="number"
                     inputMode="decimal"
                     step="0.1"
+                    min="20"
+                    max="1500"
                     className="edit-weight-input"
                     value={editWeight}
                     onChange={(e) => setEditWeight(e.target.value)}

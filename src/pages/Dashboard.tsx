@@ -31,7 +31,7 @@ export default function Dashboard() {
   function handleQuickLog(e: React.FormEvent) {
     e.preventDefault()
     const w = parseFloat(weightInput)
-    if (isNaN(w) || w <= 0) return
+    if (isNaN(w) || w < 20 || w > 1500) return
     addEntry(user!.id, w, today)
     setLogSaved(true)
     setTimeout(() => {
