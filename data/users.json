@@ -1,5 +1,8 @@
 [
   {
+    "heightIn": null,
+    "gender": null,
+    "favoriteColor": null,
     "id": "2ce92d0b-fe0f-4b05-bed6-5ecd6acd1a67",
     "name": "Jose",
     "emoji": "🦜",
@@ -9,24 +12,9 @@
     "createdAt": "2026-03-04T22:28:12.693Z"
   },
   {
-    "id": "eaafba95-0a46-43c6-9bbd-4f067e63dae3",
-    "name": "Jose",
-    "emoji": "🦜",
-    "unit": "lbs",
-    "startingWeight": null,
-    "goalWeight": null,
-    "createdAt": "2026-03-04T22:34:38.432Z"
-  },
-  {
-    "id": "e22d3fff-24cb-4367-80f1-61cb3f5ffbbe",
-    "name": "Jose",
-    "emoji": "🦜",
-    "unit": "lbs",
-    "startingWeight": null,
-    "goalWeight": null,
-    "createdAt": "2026-03-04T23:52:22.927Z"
-  },
-  {
+    "heightIn": null,
+    "gender": null,
+    "favoriteColor": null,
     "id": "ab49ad68-1cd2-4ecf-b679-aa412c370145",
     "name": "Test",
     "emoji": "🐺",
