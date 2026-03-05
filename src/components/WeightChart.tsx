@@ -133,6 +133,24 @@ export default function WeightChart({ data, unit, height = 180, dailyEntries = [
   const last = svgPts[svgPts.length - 1]
   const labelY = last.y < PAD.top + 18 ? last.y + 16 : last.y - 10
 
+  // Split line into solid runs (normal spacing) and dotted gap connectors (>1 month)
+  const GAP_MS = 31 * 24 * 60 * 60 * 1000
+  type LineSeg = { pts: typeof svgPts; isGap: boolean }
+  const lineSegs: LineSeg[] = []
+  let run: typeof svgPts = [svgPts[0]]
+  for (let i = 1; i < svgPts.length; i++) {
+    const prevEnd = new Date(pts[i - 1].weekEnd + 'T12:00:00Z').getTime()
+    const nextStart = new Date(pts[i].weekStart + 'T12:00:00Z').getTime()
+    if (nextStart - prevEnd > GAP_MS) {
+      lineSegs.push({ pts: run, isGap: false })
+      lineSegs.push({ pts: [run[run.length - 1], svgPts[i]], isGap: true })
+      run = [svgPts[i]]
+    } else {
+      run.push(svgPts[i])
+    }
+  }
+  lineSegs.push({ pts: run, isGap: false })
+
   return (
     <div className="chart-wrap">
       {tfBar}
@@ -203,12 +221,38 @@ export default function WeightChart({ data, unit, height = 180, dailyEntries = [
         {/* Green area fill */}
         {pts.length > 1 && <path d={areaPath} fill="url(#chart-area-grad)" />}
 
-        {/* Weekly average line */}
-        <path
-          d={linePath} fill="none"
-          stroke="var(--color-primary)" strokeWidth="2.5"
-          strokeLinecap="round" strokeLinejoin="round"
-        />
+        {/* Weekly average line — solid runs + dotted gap connectors */}
+        {lineSegs.map((seg, si) => {
+          if (seg.isGap) {
+            return (
+              <line
+                key={si}
+                x1={seg.pts[0].x} y1={seg.pts[0].y}
+                x2={seg.pts[1].x} y2={seg.pts[1].y}
+                stroke="var(--color-primary)" strokeWidth="2"
+                strokeDasharray="4 5" strokeLinecap="round"
+                opacity="0.4"
+              />
+            )
+          }
+          if (seg.pts.length === 1) {
+            return (
+              <circle
+                key={si} cx={seg.pts[0].x} cy={seg.pts[0].y}
+                r={3} fill="var(--color-surface)"
+                stroke="var(--color-primary)" strokeWidth="2"
+              />
+            )
+          }
+          return (
+            <path
+              key={si}
+              d={catmullRomPath(seg.pts)} fill="none"
+              stroke="var(--color-primary)" strokeWidth="2.5"
+              strokeLinecap="round" strokeLinejoin="round"
+            />
+          )
+        })}
 
         {/* Single filled dot at the most recent point only */}
         <circle
