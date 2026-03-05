@@ -137,11 +137,23 @@ export const useAppStore = create<AppStore>((set, get) => ({
   mergeData: (remoteUsers, remoteEntries) => {
     const { users: localUsers, entries: localEntries } = get()
 
+    // Users: local wins for same ID (preserves local edits like favoriteColor).
+    // Remote-only users (different IDs, e.g. new family members) are added.
     const userMap = new Map<string, User>()
     for (const u of remoteUsers) userMap.set(u.id, u)
-    for (const u of localUsers) if (!userMap.has(u.id)) userMap.set(u.id, u)
-    const users = [...userMap.values()]
+    for (const u of localUsers) userMap.set(u.id, u)  // local overwrites remote for same ID
 
+    // Patch any legacy fields missing from remote-only users
+    const users = [...userMap.values()].map((u) => ({
+      heightIn: null,
+      gender: null,
+      favoriteColor: null,
+      weekStartDay: 1 as const,
+      ...u,
+    }))
+
+    // Entries: remote wins for same ID (picks up edits from other devices),
+    // local-only entries (not yet pushed) are kept.
     const entryMap = new Map<string, WeightEntry>()
     for (const e of remoteEntries) entryMap.set(e.id, e)
     for (const e of localEntries) if (!entryMap.has(e.id)) entryMap.set(e.id, e)

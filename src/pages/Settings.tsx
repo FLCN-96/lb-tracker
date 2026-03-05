@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 function FloppyIcon() {
   return (
@@ -49,6 +49,23 @@ export default function Settings() {
   const [gender, setGender] = useState<Gender | ''>(user?.gender ?? '')
   const [weekStartDay, setWeekStartDay] = useState<number>(user?.weekStartDay ?? 1)
   const [settingsSaved, setSettingsSaved] = useState(false)
+
+  // Keep form in sync when the store is updated externally (e.g. after a sync)
+  useEffect(() => {
+    if (!user) return
+    setGoalW(user.goalWeight?.toString() ?? '')
+    setStartW(user.startingWeight?.toString() ?? '')
+    setHeightFt(user.heightIn ? String(Math.floor(user.heightIn / 12)) : '')
+    setHeightInVal(user.heightIn ? String(user.heightIn % 12) : '')
+    setGender(user.gender ?? '')
+    setWeekStartDay(user.weekStartDay ?? 1)
+  }, [
+    user?.goalWeight,
+    user?.startingWeight,
+    user?.heightIn,
+    user?.gender,
+    user?.weekStartDay,
+  ])
 
   // Dirty: compare current inputs to stored user values
   const storedHeightFt = user?.heightIn ? String(Math.floor(user.heightIn / 12)) : ''

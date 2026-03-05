@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useAppStore, selectActiveUser } from '@/store/useAppStore'
 import { storage } from '@/services/storage'
 import { fetchUsers, fetchEntries, pushUsers, pushEntries } from '@/services/github'
@@ -57,6 +57,13 @@ export default function Profile() {
   const [saved, setSaved] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [syncFlash, setSyncFlash] = useState<'ok' | 'err' | null>(null)
+
+  // Keep form in sync when the store is updated externally (e.g. after a sync)
+  useEffect(() => {
+    if (!user) return
+    setName(user.name)
+    setFavoriteColor(user.favoriteColor ?? '')
+  }, [user?.name, user?.favoriteColor])
 
   if (!user) {
     return (
