@@ -212,6 +212,43 @@ function BattleChart({
   )
 }
 
+// ─── Locked placeholder ───────────────────────────────────────────────────────
+
+function LockedChart({ height = 210, message }: { height?: number; message: string }) {
+  const iH = height - PAD.top - PAD.bottom
+  const iW = VB_W - PAD.left - PAD.right
+  const x0 = PAD.left
+  const x1 = VB_W - PAD.right
+  return (
+    <div className="chart-locked">
+      <div className="chart-wrap">
+        <svg viewBox={`0 0 ${VB_W} ${height}`} width="100%" height={height} aria-hidden="true">
+          {/* Muted grid */}
+          {[0.3, 0.65].map((t, i) => (
+            <line
+              key={i} x1={x0} y1={PAD.top + t * iH} x2={x1} y2={PAD.top + t * iH}
+              stroke="var(--color-border)" strokeWidth="0.8" strokeDasharray="3 4"
+            />
+          ))}
+          <line x1={x0} y1={PAD.top + iH} x2={x1} y2={PAD.top + iH} stroke="var(--color-border)" strokeWidth="1" />
+          {/* Two fake placeholder curves */}
+          <path
+            d={`M ${x0},${PAD.top + iH * 0.32} C ${x0 + iW * 0.3},${PAD.top + iH * 0.18} ${x0 + iW * 0.65},${PAD.top + iH * 0.42} ${x1},${PAD.top + iH * 0.28}`}
+            fill="none" stroke="var(--color-border)" strokeWidth="2.5" strokeLinecap="round"
+          />
+          <path
+            d={`M ${x0},${PAD.top + iH * 0.68} C ${x0 + iW * 0.3},${PAD.top + iH * 0.55} ${x0 + iW * 0.65},${PAD.top + iH * 0.72} ${x1},${PAD.top + iH * 0.58}`}
+            fill="none" stroke="var(--color-border)" strokeWidth="2.5" strokeLinecap="round"
+          />
+        </svg>
+      </div>
+      <div className="chart-locked-overlay">
+        <span className="chart-locked-msg">{message}</span>
+      </div>
+    </div>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Battle() {
@@ -249,30 +286,25 @@ export default function Battle() {
         ))}
       </div>
 
-      {activeSeries.length < 2 && (
-        <p className="empty-state" style={{ marginTop: 4, marginBottom: 20 }}>
-          {activeSeries.length === 0
-            ? 'No entries logged yet.'
-            : 'Log data for at least 2 members to unlock head-to-head charts.'}
-        </p>
-      )}
-
-      {activeSeries.length >= 2 && (
-        <section className="section">
-          <div className="section-title">Weekly Averages</div>
-          <BattleChart series={series} height={210} />
-        </section>
-      )}
-
-      {activeSeries.length >= 1 && (
-        <section className="section">
-          <div className="section-title">Progress from Start</div>
-          <p className="sync-hint" style={{ marginBottom: 8 }}>
-            Normalized to each person's starting weight — negative = weight lost.
-          </p>
+      {/* Progress from Start — unlocks with 1 member */}
+      <section className="section">
+        <div className="section-title">Progress from Start</div>
+        {activeSeries.length >= 1 ? (
           <BattleChart series={series} height={210} normalize />
-        </section>
-      )}
+        ) : (
+          <LockedChart height={210} message="Log weight to see your progress" />
+        )}
+      </section>
+
+      {/* Weekly Averages — unlocks with 2+ members */}
+      <section className="section">
+        <div className="section-title">Weekly Averages</div>
+        {activeSeries.length >= 2 ? (
+          <BattleChart series={series} height={210} />
+        ) : (
+          <LockedChart height={210} message="2+ members needed to compare" />
+        )}
+      </section>
     </div>
   )
 }
