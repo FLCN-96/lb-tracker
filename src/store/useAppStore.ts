@@ -7,12 +7,12 @@ interface AppActions {
   // User actions
   addUser: (name: string, emoji: UserEmoji, unit: User['unit'], startingWeight?: number, goalWeight?: number) => User
   updateUser: (id: string, patch: Partial<Omit<User, 'id' | 'createdAt'>>) => void
-  updateEntry: (id: string, weight: number, note?: string) => void
+  updateEntry: (id: string, weight: number) => void
   removeUser: (id: string) => void
   setActiveUser: (id: string | null) => void
 
   // Entry actions
-  addEntry: (userId: string, weight: number, date: string, note?: string) => WeightEntry
+  addEntry: (userId: string, weight: number, date: string) => WeightEntry
   removeEntry: (id: string) => void
 
   // Hydrate from storage (called once on mount)
@@ -111,13 +111,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   // ── Entry actions ─────────────────────────────────────────────────────────
-  addEntry: (userId, weight, date, note) => {
+  addEntry: (userId, weight, date) => {
     const entry: WeightEntry = {
       id: generateId(),
       userId,
       weight,
       date,
-      note: note?.trim() ?? null,
       createdAt: new Date().toISOString(),
     }
     const entries = [...get().entries, entry]
@@ -126,9 +125,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
     return entry
   },
 
-  updateEntry: (id, weight, note) => {
+  updateEntry: (id, weight) => {
     const entries = get().entries.map((e) =>
-      e.id === id ? { ...e, weight, note: note?.trim() ?? e.note } : e,
+      e.id === id ? { ...e, weight } : e,
     )
     set({ entries })
     storage.saveEntries(entries)

@@ -1088,10 +1088,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .entries-modal-list {
   flex: 1;
+  min-height: 0;  /* required: flex children don't shrink below content size by default */
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  margin: 8px -var(--space-md);   /* bleed to card edges */
 }
 .entries-month-header {
   font-size: 12px;

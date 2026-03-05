@@ -10,7 +10,6 @@ export default function LogWeight() {
 
   const [weight, setWeight] = useState('')
   const [date, setDate] = useState(todayStr())
-  const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
@@ -40,13 +39,12 @@ export default function LogWeight() {
       return
     }
 
-    addEntry(user!.id, w, date, note || undefined)
+    addEntry(user!.id, w, date)
     setSaved(true)
 
     // Reset for next entry
     setTimeout(() => {
       setWeight('')
-      setNote('')
       setDate(todayStr())
       setSaved(false)
     }, 1200)
@@ -92,21 +90,6 @@ export default function LogWeight() {
             onChange={(e) => setDate(e.target.value)}
             className="form-input"
             required
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="note" className="form-label">
-            Note <span className="form-label__optional">(optional)</span>
-          </label>
-          <input
-            id="note"
-            type="text"
-            placeholder="e.g. after workout, morning"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            className="form-input"
-            maxLength={120}
           />
         </div>
 
@@ -158,7 +141,6 @@ function RecentEntries({
             <span className="entry-weight">
               {e.weight.toFixed(1)} {unit}
             </span>
-            {e.note && <span className="entry-note">{e.note}</span>}
             <button
               className="entry-delete"
               onClick={() => removeEntry(e.id)}

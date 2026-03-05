@@ -25,7 +25,6 @@ export interface WeightEntry {
   userId: string
   weight: number
   date: string        // ISO date string, e.g. "2026-03-04"
-  note: string | null
   createdAt: string
 }
 
