@@ -49,8 +49,11 @@ export default function Settings() {
   const [gender, setGender] = useState<Gender | ''>(user?.gender ?? '')
   const [weekStartDay, setWeekStartDay] = useState<number>(user?.weekStartDay ?? 1)
   const [settingsSaved, setSettingsSaved] = useState(false)
+  const [syncVersion, setSyncVersion] = useState(0)
 
-  // Keep form in sync when the store is updated externally (e.g. after a sync)
+  // Keep form in sync when the store is updated externally (e.g. after a sync).
+  // syncVersion is bumped after every sync so the form resets even when the
+  // stored values didn't change (e.g. unsaved edits get discarded on sync).
   useEffect(() => {
     if (!user) return
     setGoalW(user.goalWeight?.toString() ?? '')
@@ -65,6 +68,7 @@ export default function Settings() {
     user?.heightIn,
     user?.gender,
     user?.weekStartDay,
+    syncVersion,
   ])
 
   // Dirty: compare current inputs to stored user values
@@ -190,6 +194,7 @@ export default function Settings() {
         lastSynced: now.toISOString(),
       })
       setLastSynced(now)
+      setSyncVersion((v) => v + 1)  // discard any unsaved form edits
     } catch (err) {
       setSyncError(err instanceof Error ? err.message : 'Sync failed')
     } finally {

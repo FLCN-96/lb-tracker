@@ -57,13 +57,16 @@ export default function Profile() {
   const [saved, setSaved] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [syncFlash, setSyncFlash] = useState<'ok' | 'err' | null>(null)
+  const [syncVersion, setSyncVersion] = useState(0)
 
-  // Keep form in sync when the store is updated externally (e.g. after a sync)
+  // Keep form in sync when the store is updated externally, or when a sync
+  // completes (syncVersion bump discards unsaved form edits even if values
+  // in the store didn't change).
   useEffect(() => {
     if (!user) return
     setName(user.name)
     setFavoriteColor(user.favoriteColor ?? '')
-  }, [user?.name, user?.favoriteColor])
+  }, [user?.name, user?.favoriteColor, syncVersion])
 
   if (!user) {
     return (
@@ -148,6 +151,7 @@ export default function Profile() {
       }
       storage.saveGitHubConfig({ ...ghConfig, lastSynced: new Date().toISOString() })
       setSyncFlash('ok')
+      setSyncVersion((v) => v + 1)  // discard any unsaved form edits
       setTimeout(() => setSyncFlash(null), 2000)
     } catch {
       setSyncFlash('err')
