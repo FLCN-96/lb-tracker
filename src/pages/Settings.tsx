@@ -18,8 +18,11 @@ import {
   pushEntries,
 } from '@/services/github'
 import type { GitHubConfig } from '@/services/github'
+import type { Gender } from '@/types'
 
 type EditTarget = { id: string; date: string; weight: number; note: string | null }
+
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
 
 export default function Settings() {
   const user = useAppStore(selectActiveUser)
@@ -34,15 +37,29 @@ export default function Settings() {
   const [editNote, setEditNote] = useState('')
   const [editSaved, setEditSaved] = useState(false)
 
-  // Goal settings
+  // Body & goal settings
   const [goalW, setGoalW] = useState(user?.goalWeight?.toString() ?? '')
   const [startW, setStartW] = useState(user?.startingWeight?.toString() ?? '')
+  const [heightFt, setHeightFt] = useState<string>(
+    user?.heightIn ? String(Math.floor(user.heightIn / 12)) : '',
+  )
+  const [heightInVal, setHeightInVal] = useState<string>(
+    user?.heightIn ? String(user.heightIn % 12) : '',
+  )
+  const [gender, setGender] = useState<Gender | ''>(user?.gender ?? '')
+  const [weekStartDay, setWeekStartDay] = useState<number>(user?.weekStartDay ?? 1)
   const [settingsSaved, setSettingsSaved] = useState(false)
 
   // Dirty: compare current inputs to stored user values
+  const storedHeightFt = user?.heightIn ? String(Math.floor(user.heightIn / 12)) : ''
+  const storedHeightIn = user?.heightIn ? String(user.heightIn % 12) : ''
   const settingsDirty =
-    goalW  !== (user?.goalWeight?.toString()    ?? '') ||
-    startW !== (user?.startingWeight?.toString() ?? '')
+    goalW        !== (user?.goalWeight?.toString()     ?? '')    ||
+    startW       !== (user?.startingWeight?.toString() ?? '')    ||
+    heightFt     !== storedHeightFt                              ||
+    heightInVal  !== storedHeightIn                              ||
+    gender       !== (user?.gender ?? '')                        ||
+    weekStartDay !== (user?.weekStartDay ?? 1)
 
   // GitHub sync
   const stored = storage.loadGitHubConfig()
@@ -94,11 +111,18 @@ export default function Settings() {
     setEditTarget(null)
   }
 
-  function handleSaveSettings(e: React.FormEvent) {
-    e.preventDefault()
+  function handleSaveSettings(e?: React.FormEvent) {
+    e?.preventDefault()
+    const totalIn =
+      heightFt !== '' && heightInVal !== ''
+        ? Number(heightFt) * 12 + Number(heightInVal)
+        : null
     updateUser(user.id, {
       goalWeight: parseFloat(goalW) || null,
       startingWeight: parseFloat(startW) || null,
+      heightIn: totalIn,
+      gender: (gender || null) as Gender | null,
+      weekStartDay: weekStartDay as 0 | 1 | 2 | 3 | 4 | 5 | 6,
     })
     setSettingsSaved(true)
     setTimeout(() => setSettingsSaved(false), 1500)
@@ -166,7 +190,7 @@ export default function Settings() {
         <div className="header-actions">
           <button
             className={`btn-icon${settingsSaved ? ' btn-icon--saved' : settingsDirty ? ' btn-icon--pulse' : ''}`}
-            onClick={(e) => handleSaveSettings(e as unknown as React.FormEvent)}
+            onClick={() => handleSaveSettings()}
             aria-label="Save settings"
             title="Save settings"
           >
@@ -185,10 +209,51 @@ export default function Settings() {
         </div>
       </header>
 
-      {/* ── Goal settings ── */}
+      {/* ── Body & Goals ── */}
       <section className="section">
-        <div className="section-title">Your goals</div>
+        <div className="section-title">Body &amp; Goals</div>
         <form className="form" onSubmit={handleSaveSettings}>
+
+          {/* Height */}
+          <div className="form-group">
+            <label className="form-label">Height</label>
+            <div className="height-row">
+              <input
+                type="number" inputMode="numeric" min="3" max="8"
+                placeholder="5"
+                value={heightFt}
+                onChange={(e) => setHeightFt(e.target.value)}
+                className="form-input form-input--sm"
+              />
+              <span className="height-unit">ft</span>
+              <input
+                type="number" inputMode="numeric" min="0" max="11"
+                placeholder="10"
+                value={heightInVal}
+                onChange={(e) => setHeightInVal(e.target.value)}
+                className="form-input form-input--sm"
+              />
+              <span className="height-unit">in</span>
+            </div>
+          </div>
+
+          {/* Gender */}
+          <div className="form-group">
+            <label className="form-label">Gender</label>
+            <div className="gender-row">
+              {(['male', 'female', 'other'] as Gender[]).map((g) => (
+                <button
+                  key={g} type="button"
+                  className={`gender-btn ${gender === g ? 'gender-btn--active' : ''}`}
+                  onClick={() => setGender((prev) => (prev === g ? '' : g))}
+                >
+                  {g.charAt(0).toUpperCase() + g.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Starting / Goal weight */}
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">Starting weight (lbs)</label>
@@ -213,6 +278,23 @@ export default function Settings() {
                 value={goalW}
                 onChange={(e) => setGoalW(e.target.value)}
               />
+            </div>
+          </div>
+
+          {/* Week start day */}
+          <div className="form-group">
+            <label className="form-label">Week starts on</label>
+            <div className="day-picker">
+              {DAY_LABELS.map((label, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`day-btn${weekStartDay === idx ? ' day-btn--active' : ''}`}
+                  onClick={() => setWeekStartDay(idx)}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 

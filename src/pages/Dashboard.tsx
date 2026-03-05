@@ -163,7 +163,7 @@ export default function Dashboard() {
               onClick={() => setShowExpand(true)}
             >
               <span>↕</span>
-              Expand / past dates
+              Adjust recent values
             </button>
           </div>
         </div>

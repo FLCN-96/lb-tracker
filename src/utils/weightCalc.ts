@@ -2,28 +2,27 @@ import type { WeightEntry, WeeklyAverage, WeightUnit } from '@/types'
 
 // ─── Date helpers ────────────────────────────────────────────────────────────
 
-/** Returns the ISO week key for a date, e.g. "2026-W10" */
-export function toWeekKey(dateStr: string): string {
+/**
+ * Returns the start of the week (as ISO date string) containing the given date.
+ * weekStartDay: 0=Sun, 1=Mon (default), 2=Tue, … 6=Sat
+ */
+export function weekStart(dateStr: string, weekStartDay = 1): string {
   const d = new Date(dateStr + 'T12:00:00Z') // noon UTC avoids DST edge cases
-  const jan4 = new Date(Date.UTC(d.getUTCFullYear(), 0, 4))
-  const dayOfYear = Math.floor((d.getTime() - jan4.getTime()) / 86_400_000) + 4
-  const week = Math.ceil(dayOfYear / 7)
-  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`
-}
-
-/** Returns the Monday (start) of the ISO week containing the given date */
-export function weekStart(dateStr: string): string {
-  const d = new Date(dateStr + 'T12:00:00Z')
-  const dow = (d.getUTCDay() + 6) % 7  // 0=Mon … 6=Sun
+  const dow = (d.getUTCDay() - weekStartDay + 7) % 7
   d.setUTCDate(d.getUTCDate() - dow)
   return d.toISOString().split('T')[0]
 }
 
-/** Returns the Sunday (end) of the ISO week containing the given date */
-export function weekEnd(dateStr: string): string {
-  const start = new Date(weekStart(dateStr) + 'T12:00:00Z')
+/** Returns the last day of the week containing the given date. */
+export function weekEnd(dateStr: string, weekStartDay = 1): string {
+  const start = new Date(weekStart(dateStr, weekStartDay) + 'T12:00:00Z')
   start.setUTCDate(start.getUTCDate() + 6)
   return start.toISOString().split('T')[0]
+}
+
+/** Returns a sortable key for the week: the ISO date of the week's start day. */
+export function toWeekKey(dateStr: string, weekStartDay = 1): string {
+  return weekStart(dateStr, weekStartDay)
 }
 
 /** Today's date as "YYYY-MM-DD" (local time) */
@@ -44,13 +43,14 @@ export function todayStr(): string {
 export function computeWeeklyAverages(
   userId: string,
   entries: WeightEntry[],
+  weekStartDay = 1,
 ): WeeklyAverage[] {
   const userEntries = entries.filter((e) => e.userId === userId)
 
   // Group by week key
   const grouped = new Map<string, WeightEntry[]>()
   for (const entry of userEntries) {
-    const key = toWeekKey(entry.date)
+    const key = toWeekKey(entry.date, weekStartDay)
     const bucket = grouped.get(key) ?? []
     bucket.push(entry)
     grouped.set(key, bucket)
@@ -70,8 +70,8 @@ export function computeWeeklyAverages(
     averages.push({
       userId,
       weekKey: key,
-      weekStart: weekStart(sampleDate),
-      weekEnd: weekEnd(sampleDate),
+      weekStart: weekStart(sampleDate, weekStartDay),
+      weekEnd: weekEnd(sampleDate, weekStartDay),
       average: round2(avg),
       entryCount: bucket.length,
       delta: prevAvg !== null ? round2(avg - prevAvg) : null,
@@ -87,8 +87,9 @@ export function computeWeeklyAverages(
 export function getRecentWeeks(
   userId: string,
   entries: WeightEntry[],
+  weekStartDay = 1,
 ): { current: WeeklyAverage | null; previous: WeeklyAverage | null } {
-  const all = computeWeeklyAverages(userId, entries)
+  const all = computeWeeklyAverages(userId, entries, weekStartDay)
   return {
     current: all.at(-1) ?? null,
     previous: all.length >= 2 ? all.at(-2) ?? null : null,
@@ -96,28 +97,53 @@ export function getRecentWeeks(
 }
 
 /** Total weight lost from first recorded week to most recent. */
-export function totalWeightLost(userId: string, entries: WeightEntry[]): number | null {
-  const avgs = computeWeeklyAverages(userId, entries)
+export function totalWeightLost(userId: string, entries: WeightEntry[], weekStartDay = 1): number | null {
+  const avgs = computeWeeklyAverages(userId, entries, weekStartDay)
   if (avgs.length < 2) return null
   return round2(avgs[0].average - avgs.at(-1)!.average)
 }
 
 /** Count of consecutive weeks (ending at the most recent week) that have ≥1 entry. */
-export function computeStreak(userId: string, entries: WeightEntry[]): number {
-  const avgs = computeWeeklyAverages(userId, entries)
+export function computeStreak(userId: string, entries: WeightEntry[], weekStartDay = 1): number {
+  const avgs = computeWeeklyAverages(userId, entries, weekStartDay)
   if (avgs.length === 0) return 0
 
   // Check if the most recent week is the current or last week
   const latestKey = avgs.at(-1)!.weekKey
-  const thisWeek = toWeekKey(todayStr())
-  const lastWeek = toWeekKey(
+  const thisWeekStart = weekStart(todayStr(), weekStartDay)
+  const lastWeekStart = weekStart(
     new Date(new Date().getTime() - 7 * 86_400_000)
       .toISOString()
       .split('T')[0],
+    weekStartDay,
   )
-  if (latestKey !== thisWeek && latestKey !== lastWeek) return 0
+  if (latestKey !== thisWeekStart && latestKey !== lastWeekStart) return 0
 
   return avgs.length  // simplified: consecutive since they're all sorted
+}
+
+/**
+ * Computes the linear trend (lbs/week) over the last N weekly averages.
+ * Returns null if fewer than 2 data points.
+ */
+export function computeTrend(
+  weeklyAverages: WeeklyAverage[],
+  lookbackWeeks = 8,
+): { ratePerWeek: number } | null {
+  const weeks = weeklyAverages.slice(-lookbackWeeks)
+  if (weeks.length < 2) return null
+
+  const n = weeks.length
+  const xMean = (n - 1) / 2
+  const yMean = weeks.reduce((s, w) => s + w.average, 0) / n
+  let ssxy = 0
+  let ssx = 0
+  for (let i = 0; i < n; i++) {
+    ssxy += (i - xMean) * (weeks[i].average - yMean)
+    ssx += (i - xMean) ** 2
+  }
+  const slope = ssx > 0 ? ssxy / ssx : 0
+  return { ratePerWeek: round2(slope) }
 }
 
 // ─── Unit conversion ──────────────────────────────────────────────────────────

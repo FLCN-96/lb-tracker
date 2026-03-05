@@ -16,6 +16,7 @@ export interface User {
   heightIn: number | null       // total height in inches, e.g. 70 = 5ft 10in
   gender: Gender | null
   favoriteColor: string | null  // 6-digit hex e.g. "#3a7d44"
+  weekStartDay: 0 | 1 | 2 | 3 | 4 | 5 | 6  // 0=Sun, 1=Mon (default), … 6=Sat
   createdAt: string
 }
 

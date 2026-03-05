@@ -195,8 +195,9 @@ html.ios-standalone #root {
 }
 
 .tab-item:active { opacity: 0.65; }
-.tab-icon { font-size: 20px; line-height: 1; }
-.tab-label { font-size: 10px; font-weight: 500; }
+.tab-icon { display: flex; align-items: center; justify-content: center; line-height: 1; }
+.tab-icon svg { display: block; }
+.tab-label { font-size: 10px; font-weight: 500; max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ─── Page ───────────────────────────────────────────────────────────────── */
 .page {
@@ -628,6 +629,81 @@ html.ios-standalone #root {
   background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
   border-color: var(--color-primary);
   color: var(--color-primary);
+}
+
+/* ─── Day picker (week start) ─────────────────────────────────────────────── */
+.day-picker {
+  display: flex;
+  gap: 4px;
+}
+.day-btn {
+  flex: 1;
+  padding: 7px 2px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.day-btn--active {
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* ─── Trend card ──────────────────────────────────────────────────────────── */
+.trend-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.trend-rate {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.trend-rate__value {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+.trend-rate__label {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+.trend-goal {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--color-border);
+}
+.trend-goal__label {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+.trend-goal__date {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+.trend-goal__weeks {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.trend-note {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0;
 }
 
 /* ─── Readonly value display ─────────────────────────────────────────────── */

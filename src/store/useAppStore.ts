@@ -46,6 +46,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       heightIn: null,
       gender: null,
       favoriteColor: null,
+      weekStartDay: 1 as const,
       ...u,
     }))
     set({ users: patched, entries, activeUserId })
@@ -63,6 +64,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       heightIn: null,
       gender: null,
       favoriteColor: null,
+      weekStartDay: 1,
       createdAt: new Date().toISOString(),
     }
     const users = [...get().users, user]
@@ -167,7 +169,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
 
     // Patch any missing new fields on remote users
-    const patched = remoteUsers.map((u) => ({ heightIn: null, gender: null, favoriteColor: null, ...u }))
+    const patched = remoteUsers.map((u) => ({ heightIn: null, gender: null, favoriteColor: null, weekStartDay: 1 as const, ...u }))
 
     set({ users: patched, entries: remoteEntries, activeUserId: newActiveId })
     storage.saveUsers(patched)

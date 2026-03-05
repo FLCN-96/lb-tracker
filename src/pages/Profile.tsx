@@ -2,6 +2,7 @@ import { useState, useMemo, useRef } from 'react'
 import { useAppStore, selectActiveUser } from '@/store/useAppStore'
 import { storage } from '@/services/storage'
 import { fetchUsers, fetchEntries, pushUsers, pushEntries } from '@/services/github'
+import { computeWeeklyAverages, computeTrend } from '@/utils/weightCalc'
 import type { Gender } from '@/types'
 
 // ─── BMI helpers ──────────────────────────────────────────────────────────────
@@ -49,16 +50,8 @@ export default function Profile() {
   const ghConfig = storage.loadGitHubConfig()
   const colorInputRef = useRef<HTMLInputElement>(null)
 
-  // ── Single unified form state ──────────────────────────────────────────────
+  // ── Identity form state ────────────────────────────────────────────────────
   const [name, setName] = useState(user?.name ?? '')
-  const [heightFt, setHeightFt] = useState<string | number>(
-    user?.heightIn ? Math.floor(user.heightIn / 12) : '',
-  )
-  const [heightInVal, setHeightInVal] = useState<string | number>(
-    user?.heightIn ? user.heightIn % 12 : '',
-  )
-  const [gender, setGender] = useState<Gender | ''>(user?.gender ?? '')
-  const [goalWeight, setGoalWeight] = useState(user?.goalWeight?.toFixed(1) ?? '')
   const [favoriteColor, setFavoriteColor] = useState(user?.favoriteColor ?? '')
 
   const [saved, setSaved] = useState(false)
@@ -82,42 +75,42 @@ export default function Profile() {
   }, [entries, user.id])
 
   // ── Dirty check ───────────────────────────────────────────────────────────
-  const storedHeightFt = user.heightIn ? Math.floor(user.heightIn / 12) : ''
-  const storedHeightIn = user.heightIn ? user.heightIn % 12 : ''
   const isDirty =
     name !== user.name ||
-    String(heightFt) !== String(storedHeightFt) ||
-    String(heightInVal) !== String(storedHeightIn) ||
-    gender !== (user.gender ?? '') ||
-    goalWeight !== (user.goalWeight?.toFixed(1) ?? '') ||
     favoriteColor !== (user.favoriteColor ?? '')
 
   // ── Computed BMI ──────────────────────────────────────────────────────────
-  const totalHeightIn =
-    heightFt !== '' && heightInVal !== ''
-      ? Number(heightFt) * 12 + Number(heightInVal)
-      : user.heightIn
-  const bmi = totalHeightIn && recentWeight ? calcBMI(recentWeight, totalHeightIn) : null
-  const thresholds = totalHeightIn
+  const heightIn = user.heightIn ?? null
+  const bmi = heightIn && recentWeight ? calcBMI(recentWeight, heightIn) : null
+  const thresholds = heightIn
     ? {
-        under:     weightAtBMI(18.5, totalHeightIn),
-        normalTop: weightAtBMI(25,   totalHeightIn),
-        overTop:   weightAtBMI(30,   totalHeightIn),
+        under:     weightAtBMI(18.5, heightIn),
+        normalTop: weightAtBMI(25,   heightIn),
+        overTop:   weightAtBMI(30,   heightIn),
       }
     : null
 
+  // ── Trend analysis ────────────────────────────────────────────────────────
+  const weeklyAverages = useMemo(
+    () => computeWeeklyAverages(user.id, entries, user.weekStartDay ?? 1),
+    [user.id, entries, user.weekStartDay],
+  )
+  const trend = useMemo(() => computeTrend(weeklyAverages), [weeklyAverages])
+
+  const trendGoalDate = useMemo(() => {
+    if (!trend || !user.goalWeight || !recentWeight) return null
+    if (trend.ratePerWeek >= 0) return null  // not losing weight
+    const weeksRemaining = (recentWeight - user.goalWeight) / (-trend.ratePerWeek)
+    if (weeksRemaining <= 0 || weeksRemaining > 520) return null  // sanity check
+    const d = new Date()
+    d.setDate(d.getDate() + Math.round(weeksRemaining * 7))
+    return { date: d, weeks: Math.round(weeksRemaining) }
+  }, [trend, user.goalWeight, recentWeight])
+
   // ── Save handler ──────────────────────────────────────────────────────────
   function handleSave() {
-    const totalIn =
-      heightFt !== '' && heightInVal !== ''
-        ? Number(heightFt) * 12 + Number(heightInVal)
-        : null
     updateUser(user!.id, {
       name: name.trim() || user!.name,
-      heightIn: totalIn,
-      gender: gender || null,
-      goalWeight: parseFloat(goalWeight) || null,
-      startingWeight: user!.startingWeight ?? recentWeight ?? null,
       favoriteColor: isValidHex(favoriteColor) ? favoriteColor : null,
     })
     setSaved(true)
@@ -259,67 +252,40 @@ export default function Profile() {
         </div>
       </section>
 
-      {/* ── Body stats ── */}
-      <section className="section">
-        <div className="section-title">Body Stats</div>
-        <div className="form">
-          <div className="form-group">
-            <label className="form-label">Height</label>
-            <div className="height-row">
-              <input
-                type="number" inputMode="numeric" min="3" max="8"
-                placeholder="5"
-                value={heightFt}
-                onChange={(e) => setHeightFt(e.target.value)}
-                className="form-input form-input--sm"
-              />
-              <span className="height-unit">ft</span>
-              <input
-                type="number" inputMode="numeric" min="0" max="11"
-                placeholder="10"
-                value={heightInVal}
-                onChange={(e) => setHeightInVal(e.target.value)}
-                className="form-input form-input--sm"
-              />
-              <span className="height-unit">in</span>
-            </div>
-          </div>
+      {/* ── Trend Analysis ── */}
+      {weeklyAverages.length >= 2 && (
+        <section className="section">
+          <div className="section-title">Trend</div>
+          <div className="trend-card">
+            {trend && (
+              <div className="trend-rate">
+                <span className={`trend-rate__value ${trend.ratePerWeek < 0 ? 'delta--down' : trend.ratePerWeek > 0 ? 'delta--up' : ''}`}>
+                  {trend.ratePerWeek > 0 ? '+' : ''}{trend.ratePerWeek.toFixed(1)}
+                </span>
+                <span className="trend-rate__label">lbs / week (avg over last {Math.min(weeklyAverages.length, 8)} wks)</span>
+              </div>
+            )}
 
-          <div className="form-group">
-            <label className="form-label">Gender</label>
-            <div className="gender-row">
-              {(['male', 'female', 'other'] as Gender[]).map((g) => (
-                <button
-                  key={g} type="button"
-                  className={`gender-btn ${gender === g ? 'gender-btn--active' : ''}`}
-                  onClick={() => setGender((prev) => (prev === g ? '' : g))}
-                >
-                  {g.charAt(0).toUpperCase() + g.slice(1)}
-                </button>
-              ))}
-            </div>
+            {trendGoalDate ? (
+              <div className="trend-goal">
+                <span className="trend-goal__label">Goal by</span>
+                <span className="trend-goal__date">
+                  {trendGoalDate.date.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                </span>
+                <span className="trend-goal__weeks">~{trendGoalDate.weeks} week{trendGoalDate.weeks !== 1 ? 's' : ''}</span>
+              </div>
+            ) : user.goalWeight && recentWeight !== null ? (
+              <p className="trend-note">
+                {recentWeight <= user.goalWeight
+                  ? 'Goal reached! 🎉'
+                  : 'Set a consistent pace to see a goal estimate.'}
+              </p>
+            ) : (
+              <p className="trend-note">Set a goal weight in Settings to see an estimate.</p>
+            )}
           </div>
-
-          {recentWeight !== null && (
-            <div className="form-group">
-              <label className="form-label">Most recent weight</label>
-              <div className="readonly-value">{recentWeight.toFixed(1)} {user.unit}</div>
-            </div>
-          )}
-
-          <div className="form-group">
-            <label htmlFor="goal-weight" className="form-label">Goal weight ({user.unit})</label>
-            <input
-              id="goal-weight"
-              type="number" inputMode="decimal" step="0.1" min="50" max="1000"
-              placeholder="—"
-              value={goalWeight}
-              onChange={(e) => setGoalWeight(e.target.value)}
-              className="form-input"
-            />
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ── BMI analysis ── */}
       {bmi !== null && thresholds !== null && recentWeight !== null && (
@@ -369,10 +335,10 @@ export default function Profile() {
         </section>
       )}
 
-      {(!totalHeightIn || recentWeight === null) && (
+      {(!heightIn || recentWeight === null) && (
         <p className="empty-state" style={{ padding: '4px var(--space-md) 16px', fontSize: 13 }}>
-          {!totalHeightIn
-            ? 'Enter height above to see BMI analysis.'
+          {!heightIn
+            ? 'Enter height in Settings to see BMI analysis.'
             : 'Log a weight entry to see BMI analysis.'}
         </p>
       )}

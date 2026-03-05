@@ -16,10 +16,11 @@ export function useActiveUserData() {
   return useMemo(() => {
     if (!user) return null
 
-    const weeklyAverages = computeWeeklyAverages(user.id, entries)
-    const { current, previous } = getRecentWeeks(user.id, entries)
-    const lost = totalWeightLost(user.id, entries)
-    const streak = computeStreak(user.id, entries)
+    const wsd = user.weekStartDay ?? 1
+    const weeklyAverages = computeWeeklyAverages(user.id, entries, wsd)
+    const { current, previous } = getRecentWeeks(user.id, entries, wsd)
+    const lost = totalWeightLost(user.id, entries, wsd)
+    const streak = computeStreak(user.id, entries, wsd)
 
     return {
       user,
@@ -34,10 +35,11 @@ export function useActiveUserData() {
 
 /** Returns weekly averages for a specific user by id. */
 export function useUserWeeklyAverages(userId: string): WeeklyAverage[] {
+  const user = useAppStore((s) => s.users.find((u) => u.id === userId))
   const entries = useAppStore((s) => s.entries)
   return useMemo(
-    () => computeWeeklyAverages(userId, entries),
-    [userId, entries],
+    () => computeWeeklyAverages(userId, entries, user?.weekStartDay ?? 1),
+    [userId, entries, user?.weekStartDay],
   )
 }
 
@@ -48,7 +50,7 @@ export function useGroupSnapshot() {
 
   return useMemo(() => {
     return users.map((user) => {
-      const { current } = getRecentWeeks(user.id, entries)
+      const { current } = getRecentWeeks(user.id, entries, user.weekStartDay ?? 1)
       return { user, currentWeek: current }
     })
   }, [users, entries])
