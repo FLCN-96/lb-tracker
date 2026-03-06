@@ -394,5 +394,12 @@
     "weight": 186,
     "date": "2026-01-05",
     "createdAt": "2026-03-05T19:34:12.226Z"
+  },
+  {
+    "id": "907a7e46-db49-4ede-b49e-24293d08e4c9",
+    "userId": "2ce92d0b-fe0f-4b05-bed6-5ecd6acd1a67",
+    "weight": 195.3,
+    "date": "2026-03-06",
+    "createdAt": "2026-03-06T16:22:48.196Z"
   }
 ]
