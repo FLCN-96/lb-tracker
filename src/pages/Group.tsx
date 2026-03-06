@@ -25,7 +25,7 @@ export default function Group() {
   const setActiveUser = useAppStore((s) => s.setActiveUser)
   const addUser = useAppStore((s) => s.addUser)
   const removeUser = useAppStore((s) => s.removeUser)
-  const replaceData = useAppStore((s) => s.replaceData)
+  const mergeData = useAppStore((s) => s.mergeData)
   const deduplicate = useAppStore((s) => s.deduplicate)
 
   const [showAdd, setShowAdd] = useState(false)
@@ -36,25 +36,36 @@ export default function Group() {
 
   const ghConfig = storage.loadGitHubConfig()
 
+  // Shared bidirectional sync: fetch remote, merge with local, push combined.
+  // Safe for both buttons — local-only entries are never discarded.
+  async function syncWithGitHub() {
+    const cfg = { token: ghConfig!.token, repo: ghConfig!.repo }
+    const { users: remoteUsers, sha: usersSha } = await fetchUsers(cfg)
+    const { users: localUsers } = useAppStore.getState()
+    const allIds = new Set([...localUsers.map((u) => u.id), ...remoteUsers.map((u) => u.id)])
+    const remoteEntries: import('@/types').WeightEntry[] = []
+    const entryShas: Record<string, string | null> = {}
+    for (const uid of allIds) {
+      const { entries: ue, sha } = await fetchEntries(cfg, uid)
+      remoteEntries.push(...ue)
+      entryShas[uid] = sha
+    }
+    mergeData(remoteUsers, remoteEntries)
+    const merged = useAppStore.getState()
+    await pushUsers(cfg, merged.users, usersSha)
+    for (const u of merged.users) {
+      const ue = merged.entries.filter((e) => e.userId === u.id)
+      await pushEntries(cfg, u.id, ue, entryShas[u.id] ?? null, u.name)
+    }
+    storage.saveGitHubConfig({ ...ghConfig, lastSynced: new Date().toISOString() })
+  }
+
   async function handleSave() {
     if (!ghConfig?.token) return
     setSaving(true)
     setSaveFlash(null)
     try {
-      const cfg = { token: ghConfig.token, repo: ghConfig.repo }
-      const { users: remoteUsers, sha: usersSha } = await fetchUsers(cfg)
-      const { users: localUsers, entries: localEntries } = useAppStore.getState()
-      const entryShas: Record<string, string | null> = {}
-      for (const u of localUsers) {
-        const { sha } = await fetchEntries(cfg, u.id)
-        entryShas[u.id] = sha
-      }
-      await pushUsers(cfg, localUsers, usersSha)
-      for (const u of localUsers) {
-        const ue = localEntries.filter((e) => e.userId === u.id)
-        await pushEntries(cfg, u.id, ue, entryShas[u.id] ?? null, u.name)
-      }
-      storage.saveGitHubConfig({ ...ghConfig, lastSynced: new Date().toISOString() })
+      await syncWithGitHub()
       setSaveFlash('ok')
       setTimeout(() => setSaveFlash(null), 2000)
     } catch {
@@ -67,22 +78,10 @@ export default function Group() {
 
   async function handleSync() {
     if (!ghConfig?.token) return
-    const ok = window.confirm(
-      'This will REPLACE all local data with the version from GitHub.\n\nAny unsynced local changes will be lost. Continue?',
-    )
-    if (!ok) return
     setSyncing(true)
     setSyncFlash(null)
     try {
-      const cfg = { token: ghConfig.token, repo: ghConfig.repo }
-      const { users: remoteUsers } = await fetchUsers(cfg)
-      const remoteEntries: import('@/types').WeightEntry[] = []
-      for (const u of remoteUsers) {
-        const { entries: ue } = await fetchEntries(cfg, u.id)
-        remoteEntries.push(...ue)
-      }
-      replaceData(remoteUsers, remoteEntries)
-      storage.saveGitHubConfig({ ...ghConfig, lastSynced: new Date().toISOString() })
+      await syncWithGitHub()
       setSyncFlash('ok')
       setTimeout(() => setSyncFlash(null), 2500)
     } catch {
@@ -127,8 +126,8 @@ export default function Group() {
               }`}
               onClick={handleSync}
               disabled={syncing}
-              aria-label="Replace local data with GitHub data"
-              title="Pull from GitHub (replaces local data)"
+              aria-label="Sync with GitHub"
+              title="Sync with GitHub"
             >
               ↻
             </button>

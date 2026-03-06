@@ -146,7 +146,7 @@ export default function Profile() {
     try {
       const cfg = { token: ghConfig.token, repo: ghConfig.repo }
       const { users: remoteUsers, sha: usersSha } = await fetchUsers(cfg)
-      const { users: localUsers, entries: localEntries } = useAppStore.getState()
+      const { users: localUsers } = useAppStore.getState()
       const allIds = new Set([...localUsers.map((u) => u.id), ...remoteUsers.map((u) => u.id)])
       const remoteEntries: import('@/types').WeightEntry[] = []
       const entryShas: Record<string, string | null> = {}
@@ -155,9 +155,13 @@ export default function Profile() {
         remoteEntries.push(...ue)
         entryShas[uid] = sha
       }
-      await pushUsers(cfg, localUsers, usersSha)
-      for (const u of localUsers) {
-        const ue = localEntries.filter((e) => e.userId === u.id)
+      // Merge remote into local (preserves unsynced local entries)
+      useAppStore.getState().mergeData(remoteUsers, remoteEntries)
+      // Push the merged state so remote is also up-to-date
+      const merged = useAppStore.getState()
+      await pushUsers(cfg, merged.users, usersSha)
+      for (const u of merged.users) {
+        const ue = merged.entries.filter((e) => e.userId === u.id)
         await pushEntries(cfg, u.id, ue, entryShas[u.id] ?? null, u.name)
       }
       storage.saveGitHubConfig({ ...ghConfig, lastSynced: new Date().toISOString() })
