@@ -410,12 +410,44 @@ function SlRow({ k, v, sig }: { k: string; v: React.ReactNode; sig?: string }) {
   )
 }
 
-function SlDivider({ label }: { label?: string }) {
-  return <div className="sl-divider">{label && <span className="sl-divider__label">{label}</span>}</div>
+function SlDivider({ label, tip }: { label?: string; tip?: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <div className="sl-divider">
+        {label && <span className="sl-divider__label">{label}</span>}
+        {tip && (
+          <button
+            className={`sl-tip-btn${open ? ' sl-tip-btn--active' : ''}`}
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-label="Toggle info"
+          >ⓘ</button>
+        )}
+      </div>
+      {tip && open && <div className="sl-tip-body">{tip}</div>}
+    </>
+  )
 }
 
-function SlTestLabel({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return <div className="sl-test-label" style={style}>{children}</div>
+function SlTestLabel({ children, style, tip }: { children: React.ReactNode; style?: React.CSSProperties; tip?: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <div className="sl-test-label" style={style}>
+        <span>{children}</span>
+        {tip && (
+          <button
+            className={`sl-tip-btn${open ? ' sl-tip-btn--active' : ''}`}
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-label="Toggle info"
+          >ⓘ</button>
+        )}
+      </div>
+      {tip && open && <div className="sl-tip-body">{tip}</div>}
+    </>
+  )
 }
 
 // ─── SVG diagnostic plots ─────────────────────────────────────────────────────
@@ -581,7 +613,10 @@ function StatsLab({
       {/* ── OLS ── */}
       {ols && (
         <>
-          <SlDivider label={`OLS: weight ~ week  (n = ${ols.n})`} />
+          <SlDivider
+            label={`OLS: weight ~ week  (n = ${ols.n})`}
+            tip="Linear regression of weekly avg on time index. slope = trend (lbs/wk). R² = variance explained. adj. R² corrects for n. RSE = residual noise. p tests H₀: no linear trend."
+          />
           <SlRow k="slope"   v={`${fmtSigned(ols.slope)} ${u}/wk`}                              sig={sigCode(ols.pValue)} />
           <SlRow k="95% CI"  v={`[${fmtSigned(ols.ci95[0])}, ${fmtSigned(ols.ci95[1])}] ${u}`} />
           <SlRow k="p-value" v={fmtP(ols.pValue)} />
@@ -589,17 +624,19 @@ function StatsLab({
           <SlRow k="R²"      v={ols.r2.toFixed(3)} />
           <SlRow k="adj. R²" v={ols.adjR2.toFixed(3)} />
           <SlRow k="RSE"     v={`${ols.rse.toFixed(2)} ${u}`} />
-          <div className="sl-footnote">Sig. codes:&nbsp; *** p&lt;0.001 &nbsp; ** p&lt;0.01 &nbsp; * p&lt;0.05 &nbsp; ns p≥0.05</div>
         </>
       )}
 
       {/* ── Non-Parametric Tests ── */}
       {(mk || rt) && (
         <>
-          <SlDivider label="Non-Parametric Tests" />
+          <SlDivider
+            label="Non-Parametric Tests"
+            tip="Distribution-free alternatives to OLS. Valid without normality assumption; based on ranks or sign patterns."
+          />
           {mk && (
             <>
-              <SlTestLabel>Mann-Kendall (H₀: no monotonic trend)</SlTestLabel>
+              <SlTestLabel tip="Counts concordant minus discordant pairs (S). τ ∈ [−1,+1] normalises S. More robust than OLS when data is non-normal or has outliers.">Mann-Kendall (H₀: no monotonic trend)</SlTestLabel>
               <SlRow k="S"      v={mk.S} />
               <SlRow k="τ"      v={mk.tau.toFixed(3)} />
               <SlRow k="z"      v={fmtSigned(mk.z)} />
@@ -608,7 +645,7 @@ function StatsLab({
           )}
           {rt && (
             <>
-              <SlTestLabel style={{ marginTop: 8 }}>Runs test (H₀: sequence is random)</SlTestLabel>
+              <SlTestLabel style={{ marginTop: 8 }} tip="A run = maximal sequence on one side of the median. Too few runs → persistent trend; too many → oscillation. n₊/n₋ = counts above/below median.">Runs test (H₀: sequence is random)</SlTestLabel>
               <SlRow k="runs"   v={`${rt.runs}  (n₊=${rt.n1}, n₋=${rt.n2})`} />
               <SlRow k="z"      v={fmtSigned(rt.z)} />
               <SlRow k="p"      v={fmtP(rt.pValue)} sig={sigCode(rt.pValue)} />
@@ -620,7 +657,7 @@ function StatsLab({
       {/* ── Descriptives ── */}
       {desc && (
         <>
-          <SlDivider label="Descriptives" />
+          <SlDivider label="Descriptives" tip="σ = sample SD. CV = σ/mean × 100% (lower = more consistent). Skewness (G1): 0 = symmetric, >0 = right tail, <0 = left tail." />
           <SlRow k="mean"     v={`${desc.mean.toFixed(2)} ${u}`} />
           <SlRow k="σ  (SD)"  v={`${desc.sd.toFixed(2)} ${u}`} />
           <SlRow k="CV"       v={`${desc.cv.toFixed(1)}%`} />
@@ -632,7 +669,7 @@ function StatsLab({
       {/* ── Diagnostic Plots ── */}
       {showPlots && (
         <>
-          <SlDivider label="Diagnostic Plots" />
+          <SlDivider label="Diagnostic Plots" tip="Residuals vs Time: random scatter = OLS assumptions hold. Q-Q: points on line = normal residuals. ACF: bars inside ±1.96/√n = no significant serial correlation." />
           {residuals.length >= 3 && (
             <div className="sl-plot-wrap">
               <div className="sl-plot-label">Residuals vs Time</div>
@@ -652,6 +689,11 @@ function StatsLab({
             </div>
           )}
         </>
+      )}
+
+      {/* ── Significance footer ── */}
+      {(ols || mk || rt) && (
+        <div className="sl-sig-footer">*** p&lt;0.001 · ** p&lt;0.01 · * p&lt;0.05 · ns p≥0.05</div>
       )}
 
     </div>

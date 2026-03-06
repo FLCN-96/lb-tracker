@@ -984,12 +984,57 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 /* Non-parametric test sub-labels */
 .sl-test-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--color-text-muted);
   margin-bottom: 3px;
   padding-top: 2px;
+}
+/* Tooltip toggle button */
+.sl-tip-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--color-text-muted);
+  opacity: 0.55;
+  transition: opacity 0.15s, color 0.15s;
+}
+.sl-tip-btn:hover,
+.sl-tip-btn--active {
+  opacity: 1;
+  color: var(--color-primary);
+}
+/* Tooltip definition body */
+.sl-tip-body {
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--color-text-muted);
+  font-style: italic;
+  line-height: 1.5;
+  margin: 2px 0 6px;
+  padding: 5px 8px;
+  background: color-mix(in srgb, var(--color-primary) 6%, transparent);
+  border-left: 2px solid var(--color-primary);
+  border-radius: 0 4px 4px 0;
+}
+/* Significance legend footer — applies to all p-value rows in the lab */
+.sl-sig-footer {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--color-border);
+  font-size: 10px;
+  color: var(--color-text-muted);
+  text-align: center;
+  letter-spacing: 0.04em;
+  opacity: 0.8;
 }
 /* Diagnostic plot wrappers */
 .sl-plot-wrap {
