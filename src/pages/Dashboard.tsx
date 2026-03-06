@@ -82,6 +82,15 @@ export default function Dashboard() {
     streak: 0,
   }
 
+  // Days remaining in the current week (0 = today is last day, null = not in current week)
+  const daysLeft = (() => {
+    if (!currentWeek) return null
+    const todayMs  = new Date(today + 'T12:00:00Z').getTime()
+    const weekEndMs = new Date(currentWeek.weekEnd + 'T12:00:00Z').getTime()
+    if (todayMs > weekEndMs) return null               // current data is from a past week
+    return Math.round((weekEndMs - todayMs) / 86400000)
+  })()
+
   const statsDimmed = !hasLoggedToday && weeklyAverages.length === 0
 
   return (
@@ -179,7 +188,13 @@ export default function Dashboard() {
                   {currentWeek ? formatWeight(currentWeek.average, user.unit) : '—'}
                 </span>
                 <span className="stat-sub">
-                  {currentWeek ? `${currentWeek.entryCount} day${currentWeek.entryCount !== 1 ? 's' : ''}` : 'no data'}
+                  {currentWeek
+                    ? `${currentWeek.entryCount} logged${
+                        daysLeft !== null
+                          ? daysLeft === 0 ? ' · ends today' : ` · ${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`
+                          : ''
+                      }`
+                    : 'no data'}
                 </span>
               </div>
 
