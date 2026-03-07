@@ -410,6 +410,12 @@ export default function Settings() {
         )}
       </section>
 
+      {/* ── Data Source ── */}
+      <section className="section">
+        <div className="section-title">Data Source</div>
+        <DataSourceStatus stored={stored} lastSynced={lastSynced} />
+      </section>
+
       {/* ── GitHub Sync ── */}
       <section className="section">
         <div className="section-title">GitHub Sync</div>
@@ -560,6 +566,87 @@ export default function Settings() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── Data source status card ──────────────────────────────────────────────────
+
+function DataSourceStatus({
+  stored,
+  lastSynced,
+}: {
+  stored: import('@/services/storage').StoredGitHubConfig | null
+  lastSynced: Date | null
+}) {
+  const hasGitHub = !!(stored?.token && stored?.repo)
+  const staleMins  = lastSynced ? Math.floor((Date.now() - lastSynced.getTime()) / 60_000) : null
+  const staleHrs   = staleMins  !== null ? Math.floor(staleMins / 60) : null
+  const isStale    = staleHrs   !== null && staleHrs >= 24
+
+  type Badge = 'ok' | 'warn' | 'local'
+  type NoteKind = 'caution' | 'tip' | 'sec'
+  interface Note { kind: NoteKind; text: string }
+
+  let badge: Badge
+  let statusLabel: string
+  let statusDetail: string
+  const notes: Note[] = []
+
+  if (!hasGitHub) {
+    badge = 'local'
+    statusLabel = 'Local storage only'
+    statusDetail = 'Data exists only on this device'
+    notes.push(
+      { kind: 'caution', text: 'All entries are stored in your browser\'s local storage. Clearing browser data or "Clear site data" permanently erases everything — there is no recovery.' },
+      { kind: 'caution', text: 'Opening this app in a different browser, device, or profile will show no data.' },
+      { kind: 'caution', text: 'Reinstalling the app or switching browsers also starts from scratch.' },
+      { kind: 'tip',     text: 'Configure GitHub Sync below to create an automatic off-device backup after every change.' },
+    )
+  } else if (!lastSynced) {
+    badge = 'warn'
+    statusLabel = 'Not yet synced'
+    statusDetail = 'GitHub configured · first sync pending'
+    notes.push(
+      { kind: 'caution', text: 'Data is still local-only until the first sync completes. Don\'t clear browser storage before syncing.' },
+      { kind: 'tip',     text: 'Tap "Sync Now" below to push your entries to GitHub and activate cloud backup.' },
+    )
+  } else if (isStale) {
+    badge = 'warn'
+    statusLabel = 'Sync outdated'
+    statusDetail = `Last synced ${formatRelative(lastSynced)}`
+    notes.push(
+      { kind: 'caution', text: 'Other devices may have logged new entries since the last sync. Sync before adding data here to avoid overwriting newer records.' },
+      { kind: 'tip',     text: 'The app works fully offline — entries added without internet stay local until the next successful sync.' },
+      { kind: 'tip',     text: 'Always sync when switching between devices.' },
+    )
+  } else {
+    badge = 'ok'
+    statusLabel = 'Cloud synced'
+    statusDetail = `Last synced ${formatRelative(lastSynced)}`
+    notes.push(
+      { kind: 'tip',  text: 'The app works fully offline. Entries added without internet stay local until the next sync.' },
+      { kind: 'tip',  text: 'Always sync before switching to a different device — unsynced local changes are not visible elsewhere.' },
+      { kind: 'sec',  text: 'Your Personal Access Token grants write access to the configured repo. Treat it like a password and don\'t share it.' },
+    )
+  }
+
+  const iconFor = (kind: NoteKind) => kind === 'caution' ? '▲' : kind === 'sec' ? '⚿' : '›'
+
+  return (
+    <div className="ds-card">
+      <div className="ds-status-row">
+        <span className={`ds-badge ds-badge--${badge}`}>{statusLabel}</span>
+        <span className="ds-detail">{statusDetail}</span>
+      </div>
+      <ul className="ds-notes">
+        {notes.map((n, i) => (
+          <li key={i} className={`ds-note ds-note--${n.kind}`}>
+            <span className="ds-note__icon">{iconFor(n.kind)}</span>
+            <span>{n.text}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

@@ -1053,6 +1053,77 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   overflow: visible;
 }
 
+/* ─── Data Source card ───────────────────────────────────────────────────── */
+.ds-card {
+  background: var(--color-bg-alt);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+.ds-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.ds-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.ds-badge--ok {
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  color: var(--color-primary);
+}
+.ds-badge--warn {
+  background: color-mix(in srgb, #d97706 18%, transparent);
+  color: #d97706;
+}
+.ds-badge--local {
+  background: color-mix(in srgb, var(--color-text-muted) 18%, transparent);
+  color: var(--color-text-muted);
+}
+.ds-detail {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.ds-notes {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.ds-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+.ds-note__icon {
+  flex-shrink: 0;
+  width: 13px;
+  text-align: center;
+  margin-top: 1px;
+  font-size: 10px;
+}
+.ds-note--caution {
+  color: #d97706;
+}
+.ds-note--caution .ds-note__icon {
+  font-size: 9px;
+}
+.ds-note--sec {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
 /* ─── Mass Import ────────────────────────────────────────────────────────── */
 .import-textarea {
   width: 100%;
