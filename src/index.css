@@ -490,6 +490,40 @@ html.ios-standalone #root {
   flex-shrink: 0;
 }
 
+/* ── Inline remove confirmation ── */
+.member-card--removing {
+  border-color: color-mix(in srgb, var(--color-up) 40%, transparent);
+  background: color-mix(in srgb, var(--color-up) 5%, var(--color-surface));
+}
+.member-card__confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 14px;
+  width: 100%;
+}
+.member-card__confirm-msg {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--color-text);
+  line-height: 1.4;
+}
+.member-avatar--sm {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.member-card__confirm-count {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+.member-card__confirm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .member-avatar {
   width: 40px; height: 40px;
   border-radius: 50%;

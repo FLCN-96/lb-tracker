@@ -33,6 +33,7 @@ export default function Group() {
   const [syncFlash, setSyncFlash] = useState<'ok' | 'err' | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveFlash, setSaveFlash] = useState<'ok' | 'err' | null>(null)
+  const [removingId, setRemovingId] = useState<string | null>(null)
 
   const ghConfig = storage.loadGitHubConfig()
 
@@ -92,10 +93,9 @@ export default function Group() {
     }
   }
 
-  function handleRemove(userId: string, userName: string) {
-    if (window.confirm(`Remove ${userName}? This deletes all their weight entries.`)) {
-      removeUser(userId)
-    }
+  function handleRemove(userId: string) {
+    removeUser(userId)
+    setRemovingId(null)
   }
 
   return (
@@ -142,65 +142,104 @@ export default function Group() {
         </p>
       ) : (
         <ul className="member-list">
-          {members.map(({ user, currentWeek }) => (
-            <li
-              key={user.id}
-              className={`member-card ${user.id === activeUserId ? 'member-card--active' : ''}`}
-            >
-              {/* Avatar + info — clickable to switch active user */}
-              <button
-                className="member-card__main"
-                onClick={() => setActiveUser(user.id)}
-                aria-pressed={user.id === activeUserId}
+          {members.map(({ user, currentWeek }) => {
+            const isActive    = user.id === activeUserId
+            const isRemoving  = user.id === removingId
+            const entryCount  = entries.filter((e) => e.userId === user.id).length
+
+            return (
+              <li
+                key={user.id}
+                className={`member-card ${isActive ? 'member-card--active' : ''} ${isRemoving ? 'member-card--removing' : ''}`}
               >
-                <div className="member-avatar">{user.emoji}</div>
-                <div className="member-info">
-                  <span className="member-name">{user.name}</span>
-                  <span className="member-unit">{user.unit}</span>
-                </div>
-                <div className="member-stats">
-                  {currentWeek ? (
-                    <>
-                      <span className="member-avg">
-                        {formatWeight(currentWeek.average, user.unit)}
+                {isRemoving ? (
+                  /* ── Inline delete confirmation ── */
+                  <div className="member-card__confirm">
+                    <div className="member-card__confirm-msg">
+                      <span className="member-avatar member-avatar--sm">{user.emoji}</span>
+                      <span>
+                        Remove <strong>{user.name}</strong>?
+                        {entryCount > 0 && (
+                          <span className="member-card__confirm-count">
+                            {' '}{entryCount} entr{entryCount === 1 ? 'y' : 'ies'} will be deleted.
+                          </span>
+                        )}
                       </span>
-                      <span
-                        className={`member-delta ${
-                          currentWeek.delta === null
-                            ? ''
-                            : currentWeek.delta < 0
-                            ? 'delta--down'
-                            : currentWeek.delta > 0
-                            ? 'delta--up'
-                            : ''
-                        }`}
+                    </div>
+                    <div className="member-card__confirm-actions">
+                      <button
+                        className="btn btn--ghost"
+                        onClick={() => setRemovingId(null)}
                       >
-                        {formatDelta(currentWeek.delta, user.unit)}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="member-no-data">No data</span>
-                  )}
-                </div>
-              </button>
+                        Cancel
+                      </button>
+                      <button
+                        className="btn btn--danger"
+                        onClick={() => handleRemove(user.id)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Avatar + info — clickable to switch active user */}
+                    <button
+                      className="member-card__main"
+                      onClick={() => setActiveUser(user.id)}
+                      aria-pressed={isActive}
+                    >
+                      <div className="member-avatar">{user.emoji}</div>
+                      <div className="member-info">
+                        <span className="member-name">{user.name}</span>
+                        <span className="member-unit">{user.unit}</span>
+                      </div>
+                      <div className="member-stats">
+                        {currentWeek ? (
+                          <>
+                            <span className="member-avg">
+                              {formatWeight(currentWeek.average, user.unit)}
+                            </span>
+                            <span
+                              className={`member-delta ${
+                                currentWeek.delta === null
+                                  ? ''
+                                  : currentWeek.delta < 0
+                                  ? 'delta--down'
+                                  : currentWeek.delta > 0
+                                  ? 'delta--up'
+                                  : ''
+                              }`}
+                            >
+                              {formatDelta(currentWeek.delta, user.unit)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="member-no-data">No data</span>
+                        )}
+                      </div>
+                    </button>
 
-              {/* Remove button (not for active user) */}
-              {user.id !== activeUserId && (
-                <button
-                  className="member-card__remove"
-                  onClick={() => handleRemove(user.id, user.name)}
-                  aria-label={`Remove ${user.name}`}
-                  title="Remove member"
-                >
-                  ✕
-                </button>
-              )}
+                    {/* Remove trigger (not for active user) */}
+                    {!isActive && (
+                      <button
+                        className="member-card__remove"
+                        onClick={() => setRemovingId(user.id)}
+                        aria-label={`Remove ${user.name}`}
+                        title="Remove member"
+                      >
+                        ✕
+                      </button>
+                    )}
 
-              {user.id === activeUserId && (
-                <span className="member-card__active-badge">Active</span>
-              )}
-            </li>
-          ))}
+                    {isActive && (
+                      <span className="member-card__active-badge">Active</span>
+                    )}
+                  </>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
 
