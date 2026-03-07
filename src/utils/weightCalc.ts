@@ -64,8 +64,18 @@ export function computeWeeklyAverages(
 
   for (const key of sortedKeys) {
     const bucket = grouped.get(key)!
-    const avg = bucket.reduce((sum, e) => sum + e.weight, 0) / bucket.length
     const sampleDate = bucket[0].date
+
+    // Average multiple entries on the same day before averaging across days,
+    // so that a user who logs twice on one day isn't over-represented.
+    const byDay = new Map<string, number[]>()
+    for (const entry of bucket) {
+      const arr = byDay.get(entry.date) ?? []
+      arr.push(entry.weight)
+      byDay.set(entry.date, arr)
+    }
+    const dailyAverages = [...byDay.values()].map((ws) => ws.reduce((s, w) => s + w, 0) / ws.length)
+    const avg = dailyAverages.reduce((s, v) => s + v, 0) / dailyAverages.length
 
     averages.push({
       userId,
@@ -73,7 +83,7 @@ export function computeWeeklyAverages(
       weekStart: weekStart(sampleDate, weekStartDay),
       weekEnd: weekEnd(sampleDate, weekStartDay),
       average: round2(avg),
-      entryCount: bucket.length,
+      entryCount: byDay.size,  // number of distinct days logged
       delta: prevAvg !== null ? round2(avg - prevAvg) : null,
     })
 

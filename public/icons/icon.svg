@@ -1,14 +1,69 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#0f172a"/>
-  <!-- Scale base -->
-  <rect x="128" y="340" width="256" height="28" rx="14" fill="#38bdf8"/>
-  <!-- Scale pillar -->
-  <rect x="244" y="240" width="24" height="108" rx="8" fill="#38bdf8"/>
-  <!-- Scale platform (top) -->
-  <ellipse cx="256" cy="220" rx="96" ry="24" fill="#0ea5e9"/>
-  <!-- Down arrow -->
-  <path d="M220 130 L256 190 L292 130 Z" fill="#34d399"/>
-  <!-- Weight text area -->
-  <text x="256" y="110" text-anchor="middle" font-family="system-ui,sans-serif"
-        font-size="64" font-weight="700" fill="#f8fafc">LB</text>
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="#0e1a11"/>
+
+  <!-- ── Scale base ── -->
+  <rect x="110" y="404" width="292" height="54" rx="16" fill="#1c3829"/>
+  <rect x="122" y="404" width="268" height="42" rx="11" fill="#243f30"/>
+
+  <!-- ── Scale body ── -->
+  <rect x="172" y="260" width="168" height="156" rx="22" fill="#1c3829"/>
+  <rect x="182" y="268" width="148" height="140" rx="16" fill="#1f3e2d"/>
+
+  <!-- Display face -->
+  <circle cx="256" cy="348" r="48" fill="#091510" stroke="#2d6a4f" stroke-width="3"/>
+  <!-- Dial tick marks -->
+  <line x1="256" y1="306" x2="256" y2="316" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="288" y1="312" x2="284" y2="321" stroke="#4ade80" stroke-width="2"   stroke-linecap="round"/>
+  <line x1="300" y1="340" x2="291" y2="342" stroke="#4ade80" stroke-width="2"   stroke-linecap="round"/>
+  <line x1="224" y1="312" x2="228" y2="321" stroke="#4ade80" stroke-width="2"   stroke-linecap="round"/>
+  <line x1="212" y1="340" x2="221" y2="342" stroke="#4ade80" stroke-width="2"   stroke-linecap="round"/>
+  <!-- Needle pointing right-of-center (weight registering) -->
+  <line x1="256" y1="348" x2="280" y2="313" stroke="#4ade80" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="256" cy="348" r="6" fill="#4ade80"/>
+
+  <!-- ── Platform disc ── -->
+  <!-- Rim / side wall -->
+  <ellipse cx="256" cy="272" rx="128" ry="22" fill="#1c3829"/>
+  <!-- Top surface -->
+  <ellipse cx="256" cy="257" rx="128" ry="22" fill="#2d6a4f"/>
+  <!-- Highlight -->
+  <ellipse cx="244" cy="251" rx="94" ry="13" fill="#38a169" opacity="0.45"/>
+
+  <!-- ── Bird ── -->
+  <!-- Tail feathers (behind body, pointing left) -->
+  <path d="M170 205 Q144 218 138 244 Q158 228 180 224 Z" fill="#b45309"/>
+
+  <!-- Body -->
+  <ellipse cx="222" cy="204" rx="58" ry="42" fill="#fbbf24"/>
+
+  <!-- Wing (darker overlay) -->
+  <path d="M176 208 Q180 238 224 236 Q222 220 193 212 Z" fill="#d97706"/>
+
+  <!-- Head -->
+  <circle cx="270" cy="172" r="34" fill="#fbbf24"/>
+  <!-- Neck fill (connects head and body smoothly) -->
+  <ellipse cx="248" cy="188" rx="26" ry="20" fill="#fbbf24"/>
+
+  <!-- Eye -->
+  <circle cx="283" cy="165" r="9"   fill="#111"/>
+  <circle cx="286" cy="162" r="3.2" fill="white"/>
+
+  <!-- Beak -->
+  <path d="M296 171 L328 163 L296 178 Z" fill="#f59e0b"/>
+  <line x1="296" y1="173" x2="326" y2="165" stroke="#d97706" stroke-width="1.8"/>
+
+  <!-- Legs -->
+  <line x1="226" y1="242" x2="214" y2="257" stroke="#92400e" stroke-width="5.5" stroke-linecap="round"/>
+  <line x1="248" y1="242" x2="254" y2="257" stroke="#92400e" stroke-width="5.5" stroke-linecap="round"/>
+
+  <!-- Left foot toes -->
+  <line x1="214" y1="257" x2="196" y2="262" stroke="#92400e" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="214" y1="257" x2="212" y2="267" stroke="#92400e" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="214" y1="257" x2="227" y2="263" stroke="#92400e" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Right foot toes -->
+  <line x1="254" y1="257" x2="238" y2="262" stroke="#92400e" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="254" y1="257" x2="254" y2="267" stroke="#92400e" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="254" y1="257" x2="268" y2="263" stroke="#92400e" stroke-width="3.5" stroke-linecap="round"/>
 </svg>
