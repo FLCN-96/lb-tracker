@@ -11,5 +11,18 @@
     "startingWeight": 235,
     "goalWeight": 160,
     "createdAt": "2026-03-04T22:28:12.693Z"
+  },
+  {
+    "heightIn": null,
+    "gender": null,
+    "favoriteColor": null,
+    "weekStartDay": 1,
+    "id": "0aca0515-bc70-4c2f-a36d-993b2b235cde",
+    "name": "CJM",
+    "emoji": "🦝",
+    "unit": "lbs",
+    "startingWeight": 220,
+    "goalWeight": 185,
+    "createdAt": "2026-03-04T23:11:28.009Z"
   }
 ]
