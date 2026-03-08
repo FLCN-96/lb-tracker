@@ -38,12 +38,15 @@ export default function Group() {
   const ghConfig = storage.loadGitHubConfig()
 
   // Shared bidirectional sync: fetch remote, merge with local, push combined.
-  // Safe for both buttons — local-only entries are never discarded.
+  // Tombstoned (locally deleted) users are filtered out before merge so sync
+  // doesn't resurrect them; tombstones are cleared after a successful push.
   async function syncWithGitHub() {
     const cfg = { token: ghConfig!.token, repo: ghConfig!.repo }
     const { users: remoteUsers, sha: usersSha } = await fetchUsers(cfg)
     const { users: localUsers } = useAppStore.getState()
-    const allIds = new Set([...localUsers.map((u) => u.id), ...remoteUsers.map((u) => u.id)])
+    const tombstones = new Set(storage.loadDeletedUserIds())
+    const filteredRemote = remoteUsers.filter((u) => !tombstones.has(u.id))
+    const allIds = new Set([...localUsers.map((u) => u.id), ...filteredRemote.map((u) => u.id)])
     const remoteEntries: import('@/types').WeightEntry[] = []
     const entryShas: Record<string, string | null> = {}
     for (const uid of allIds) {
@@ -51,7 +54,7 @@ export default function Group() {
       remoteEntries.push(...ue)
       entryShas[uid] = sha
     }
-    mergeData(remoteUsers, remoteEntries)
+    mergeData(filteredRemote, remoteEntries.filter((e) => !tombstones.has(e.userId)))
     const merged = useAppStore.getState()
     await pushUsers(cfg, merged.users, usersSha)
     for (const u of merged.users) {
@@ -59,6 +62,7 @@ export default function Group() {
       await pushEntries(cfg, u.id, ue, entryShas[u.id] ?? null, u.name)
     }
     storage.saveGitHubConfig({ ...ghConfig, lastSynced: new Date().toISOString() })
+    storage.saveDeletedUserIds([])
   }
 
   async function handleSave() {

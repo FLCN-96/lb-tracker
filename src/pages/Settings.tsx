@@ -194,11 +194,15 @@ export default function Settings() {
       // 1. Pull remote users
       const { users: remoteUsers, sha: usersSha } = await fetchUsers(cfg)
 
-      // 2. Pull remote entries for every known user (local + remote)
-      const { users: localUsers, entries: localEntries } = useAppStore.getState()
+      // 2. Filter out tombstoned (locally deleted) users so they aren't revived
+      const tombstones = new Set(storage.loadDeletedUserIds())
+      const filteredRemoteUsers = remoteUsers.filter((u) => !tombstones.has(u.id))
+
+      // 3. Pull remote entries for every known user (local + non-tombstoned remote)
+      const { users: localUsers } = useAppStore.getState()
       const allUserIds = new Set([
         ...localUsers.map((u) => u.id),
-        ...remoteUsers.map((u) => u.id),
+        ...filteredRemoteUsers.map((u) => u.id),
       ])
 
       const remoteEntries = []
@@ -209,10 +213,10 @@ export default function Settings() {
         entryShas[uid] = sha
       }
 
-      // 3. Merge remote into local store
-      mergeData(remoteUsers, remoteEntries)
+      // 4. Merge remote into local store (tombstoned users excluded)
+      mergeData(filteredRemoteUsers, remoteEntries.filter((e) => !tombstones.has(e.userId)))
 
-      // 4. Push merged state back to GitHub
+      // 5. Push merged state back to GitHub
       const merged = useAppStore.getState()
       await pushUsers(cfg, merged.users, usersSha)
       for (const u of merged.users) {
@@ -220,7 +224,8 @@ export default function Settings() {
         await pushEntries(cfg, u.id, ue, entryShas[u.id] ?? null, u.name)
       }
 
-      // 5. Persist config + timestamp
+      // 6. Persist config + timestamp; clear tombstones now that deletion is pushed
+      storage.saveDeletedUserIds([])
       const now = new Date()
       storage.saveGitHubConfig({
         token: cfg.token,

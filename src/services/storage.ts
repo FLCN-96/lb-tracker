@@ -8,6 +8,7 @@ const KEYS = {
   ENTRIES: 'lb-tracker:entries',
   ACTIVE_USER: 'lb-tracker:activeUserId',
   GITHUB: 'lb-tracker:github',
+  DELETED_USERS: 'lb-tracker:deletedUsers',
 } as const
 
 export interface StoredGitHubConfig {
@@ -46,6 +47,10 @@ export const storage = {
 
   loadGitHubConfig: () => load<StoredGitHubConfig | null>(KEYS.GITHUB, null),
   saveGitHubConfig: (cfg: StoredGitHubConfig | null) => save(KEYS.GITHUB, cfg),
+
+  /** IDs of users deleted on this device, kept until next successful push. */
+  loadDeletedUserIds: () => load<string[]>(KEYS.DELETED_USERS, []),
+  saveDeletedUserIds: (ids: string[]) => save(KEYS.DELETED_USERS, ids),
 
   /** Wipe all app data — used for testing / account reset. */
   clearAll: () => {

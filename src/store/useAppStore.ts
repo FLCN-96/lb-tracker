@@ -103,6 +103,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
     storage.saveUsers(users)
     storage.saveEntries(entries)
     storage.saveActiveUserId(activeUserId)
+    // Tombstone so sync doesn't resurrect this user from remote
+    const deleted = [...new Set([...storage.loadDeletedUserIds(), id])]
+    storage.saveDeletedUserIds(deleted)
   },
 
   setActiveUser: (id) => {
