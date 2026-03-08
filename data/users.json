@@ -11,18 +11,5 @@
     "startingWeight": 235,
     "goalWeight": 160,
     "createdAt": "2026-03-04T22:28:12.693Z"
-  },
-  {
-    "heightIn": null,
-    "gender": null,
-    "favoriteColor": null,
-    "weekStartDay": 1,
-    "id": "9a49b407-cc09-4a59-9ef8-eee82deb1b3d",
-    "name": "P",
-    "emoji": "🦜",
-    "unit": "lbs",
-    "startingWeight": null,
-    "goalWeight": null,
-    "createdAt": "2026-03-07T21:53:20.432Z"
   }
 ]
