@@ -16,6 +16,8 @@ const TF_OPTIONS: { label: string; value: TimeFrame }[] = [
   { label: '1M', value: '1m' },
 ]
 
+type ChartMode = 'absolute' | 'fromStart' | 'fromJoin' | 'weeklyDelta'
+
 const PAD = { top: 24, right: 28, bottom: 28, left: 34 }
 const VB_W = 360
 
@@ -25,16 +27,21 @@ interface SeriesData {
   averages: WeeklyAverage[]
 }
 
+interface PlotPoint {
+  series: SeriesData
+  vals: (number | null)[]
+}
+
 // ─── Multi-series chart ───────────────────────────────────────────────────────
 
 function BattleChart({
   series,
   height = 210,
-  normalize = false,
+  mode = 'absolute',
 }: {
   series: SeriesData[]
   height?: number
-  normalize?: boolean
+  mode?: ChartMode
 }) {
   const [frame, setFrame] = useState<TimeFrame>('all')
 
@@ -47,6 +54,7 @@ function BattleChart({
     return d.toISOString().split('T')[0]
   }, [frame])
 
+  // Filter each series to the selected time frame
   const active = useMemo(() => {
     const withData = series.filter((s) => s.averages.length > 0)
     if (!cutoffDate) return withData
@@ -54,6 +62,84 @@ function BattleChart({
       .map((s) => ({ ...s, averages: s.averages.filter((a) => a.weekEnd >= cutoffDate) }))
       .filter((s) => s.averages.length > 0)
   }, [series, cutoffDate])
+
+  // Compute x-axis week keys and y-values per series based on mode
+  const { allWeekKeys, plotPoints } = useMemo((): { allWeekKeys: string[]; plotPoints: PlotPoint[] } => {
+    if (active.length === 0) return { allWeekKeys: [], plotPoints: [] }
+
+    if (mode === 'fromJoin') {
+      // Race baseline: the first week of whoever joined latest (within the time frame)
+      const raceStart = active.reduce((latest, s) => {
+        const first = s.averages[0]?.weekKey ?? ''
+        return first > latest ? first : latest
+      }, '')
+
+      const filtered = active
+        .map((s) => {
+          const avgs = s.averages.filter((a) => a.weekKey >= raceStart)
+          const baseline = avgs[0]?.average ?? null
+          return baseline !== null ? { s, avgs, baseline } : null
+        })
+        .filter((f): f is { s: SeriesData; avgs: WeeklyAverage[]; baseline: number } => f !== null)
+
+      const allWeekKeys = [
+        ...new Set(filtered.flatMap((f) => f.avgs.map((a) => a.weekKey))),
+      ].sort()
+
+      const plotPoints: PlotPoint[] = filtered.map(({ s, avgs, baseline }) => {
+        const byWeek = new Map(avgs.map((a) => [a.weekKey, a.average]))
+        return {
+          series: s,
+          vals: allWeekKeys.map<number | null>((k) => byWeek.has(k) ? byWeek.get(k)! - baseline : null),
+        }
+      })
+
+      return { allWeekKeys, plotPoints }
+    }
+
+    if (mode === 'weeklyDelta') {
+      const allWeekKeys = [
+        ...new Set(
+          active.flatMap((s) => s.averages.filter((a) => a.delta !== null).map((a) => a.weekKey)),
+        ),
+      ].sort()
+
+      const plotPoints: PlotPoint[] = active
+        .map((s) => {
+          const byWeek = new Map(
+            s.averages.filter((a) => a.delta !== null).map((a) => [a.weekKey, a.delta!]),
+          )
+          return {
+            series: s,
+            vals: allWeekKeys.map<number | null>((k) => byWeek.get(k) ?? null),
+          }
+        })
+        .filter((p) => p.vals.some((v) => v !== null))
+
+      return { allWeekKeys, plotPoints }
+    }
+
+    // 'absolute' | 'fromStart'
+    const allWeekKeys = [
+      ...new Set(active.flatMap((s) => s.averages.map((a) => a.weekKey))),
+    ].sort()
+
+    const plotPoints: PlotPoint[] = active.map((s) => {
+      const baseline =
+        mode === 'fromStart' ? (s.user.startingWeight ?? s.averages[0].average) : 0
+      const byWeek = new Map(s.averages.map((a) => [a.weekKey, a.average]))
+      return {
+        series: s,
+        vals: allWeekKeys.map<number | null>((k) =>
+          byWeek.has(k) ? byWeek.get(k)! - baseline : null,
+        ),
+      }
+    })
+
+    return { allWeekKeys, plotPoints }
+  }, [active, mode])
+
+  const isRelative = mode !== 'absolute'
 
   const tfBar = (
     <div className="chart-tf-bar">
@@ -69,7 +155,7 @@ function BattleChart({
     </div>
   )
 
-  if (active.length === 0) {
+  if (plotPoints.length === 0) {
     return (
       <div className="chart-wrap">
         {tfBar}
@@ -78,32 +164,16 @@ function BattleChart({
     )
   }
 
-  // Union of all week keys, ascending
-  const allWeekKeys = [
-    ...new Set(active.flatMap((s) => s.averages.map((a) => a.weekKey))),
-  ].sort()
   const n = allWeekKeys.length
-
-  // Per-series baseline-adjusted values (null = no entry that week)
-  const seriesVals = active.map((s) => {
-    const baseline = normalize
-      ? (s.user.startingWeight ?? s.averages[0].average)
-      : 0
-    const byWeek = new Map(s.averages.map((a) => [a.weekKey, a.average]))
-    return allWeekKeys.map<number | null>((k) =>
-      byWeek.has(k) ? byWeek.get(k)! - baseline : null,
-    )
-  })
-
-  const flat = seriesVals.flat().filter((v): v is number => v !== null)
+  const flat = plotPoints.flatMap((p) => p.vals).filter((v): v is number => v !== null)
   if (flat.length === 0) return <div className="chart-empty">No data in this period</div>
 
   const minV = Math.min(...flat)
   const maxV = Math.max(...flat)
   const rawRange = maxV - minV
   const range = rawRange < 2 ? 4 : rawRange
-  const paddedMin = normalize ? Math.min(minV - range * 0.12, -1) : minV - range * 0.12
-  const paddedMax = normalize ? Math.max(maxV + range * 0.12, 1) : maxV + range * 0.12
+  const paddedMin = isRelative ? Math.min(minV - range * 0.12, -1) : minV - range * 0.12
+  const paddedMax = isRelative ? Math.max(maxV + range * 0.12, 1) : maxV + range * 0.12
 
   const innerW = VB_W - PAD.left - PAD.right
   const innerH = height - PAD.top - PAD.bottom
@@ -111,12 +181,12 @@ function BattleChart({
   const toY = (v: number) => PAD.top + (1 - (v - paddedMin) / (paddedMax - paddedMin)) * innerH
   const bottomY = PAD.top + innerH
 
-  const yTicks = normalize
+  const yTicks = isRelative
     ? [paddedMax, 0, paddedMin]
     : [paddedMax, (paddedMax + paddedMin) / 2, paddedMin]
 
   const xLabelIdxs = selectLabelIndices(n, 5)
-  const zeroY = normalize ? toY(0) : null
+  const zeroY = isRelative ? toY(0) : null
 
   return (
     <div className="chart-wrap">
@@ -127,7 +197,7 @@ function BattleChart({
         height={height}
         overflow="visible"
         role="img"
-        aria-label={normalize ? 'Progress from start chart' : 'Weekly averages comparison chart'}
+        aria-label="Comparison chart"
       >
         {/* Grid + Y labels */}
         {yTicks.map((tick, ti) => {
@@ -143,13 +213,13 @@ function BattleChart({
                 textAnchor="end" dominantBaseline="middle"
                 fontSize="9" fill="var(--color-text-muted)" fontFamily="var(--font-sans)"
               >
-                {normalize ? `${tick > 0 ? '+' : ''}${tick.toFixed(0)}` : tick.toFixed(0)}
+                {isRelative ? `${tick > 0 ? '+' : ''}${tick.toFixed(0)}` : tick.toFixed(0)}
               </text>
             </g>
           )
         })}
 
-        {/* Zero line for normalized chart */}
+        {/* Zero reference line for relative charts */}
         {zeroY !== null && (
           <line
             x1={PAD.left} y1={zeroY} x2={VB_W - PAD.right} y2={zeroY}
@@ -176,10 +246,10 @@ function BattleChart({
         ))}
 
         {/* Per-user lines + final dot + emoji tail */}
-        {active.map((s, si) => {
+        {plotPoints.map(({ series: s, vals }) => {
           const pts: { x: number; y: number }[] = []
           for (let i = 0; i < n; i++) {
-            const v = seriesVals[si][i]
+            const v = vals[i]
             if (v !== null) pts.push({ x: toX(i), y: toY(v) })
           }
           if (pts.length === 0) return null
@@ -194,9 +264,7 @@ function BattleChart({
                 stroke={s.color} strokeWidth="2.5"
                 strokeLinecap="round" strokeLinejoin="round"
               />
-              {/* Single filled dot at the most recent point */}
               <circle cx={last.x} cy={last.y} r={5} fill={s.color} stroke={s.color} strokeWidth="2" />
-              {/* Emoji at the tail */}
               <text
                 x={last.x + 9} y={last.y + 5}
                 fontSize="15" textAnchor="start"
@@ -223,7 +291,6 @@ function LockedChart({ height = 210, message }: { height?: number; message: stri
     <div className="chart-locked">
       <div className="chart-wrap">
         <svg viewBox={`0 0 ${VB_W} ${height}`} width="100%" height={height} aria-hidden="true">
-          {/* Muted grid */}
           {[0.3, 0.65].map((t, i) => (
             <line
               key={i} x1={x0} y1={PAD.top + t * iH} x2={x1} y2={PAD.top + t * iH}
@@ -231,7 +298,6 @@ function LockedChart({ height = 210, message }: { height?: number; message: stri
             />
           ))}
           <line x1={x0} y1={PAD.top + iH} x2={x1} y2={PAD.top + iH} stroke="var(--color-border)" strokeWidth="1" />
-          {/* Two fake placeholder curves */}
           <path
             d={`M ${x0},${PAD.top + iH * 0.32} C ${x0 + iW * 0.3},${PAD.top + iH * 0.18} ${x0 + iW * 0.65},${PAD.top + iH * 0.42} ${x1},${PAD.top + iH * 0.28}`}
             fill="none" stroke="var(--color-border)" strokeWidth="2.5" strokeLinecap="round"
@@ -267,6 +333,32 @@ export default function Battle() {
 
   const activeSeries = series.filter((s) => s.averages.length > 0)
 
+  // The "newest" member = whoever has the latest first entry.
+  // Used to label the Race from Here section.
+  const newestMember = useMemo((): SeriesData | null => {
+    if (activeSeries.length < 2) return null
+    return activeSeries.reduce((latest, s) => {
+      const k = s.averages[0]?.weekKey ?? ''
+      const lk = latest?.averages[0]?.weekKey ?? ''
+      return k > lk ? s : latest
+    }, activeSeries[0])
+  }, [activeSeries])
+
+  // "Race from Here" unlocks when 2+ members have data that overlaps at/after
+  // the newest member's first entry. We check this by seeing if at least 2
+  // series have data at or after newestMember's first weekKey.
+  const raceUnlocked = useMemo(() => {
+    if (!newestMember) return false
+    const raceStart = newestMember.averages[0]?.weekKey ?? ''
+    const participating = activeSeries.filter((s) =>
+      s.averages.some((a) => a.weekKey >= raceStart),
+    )
+    return participating.length >= 2
+  }, [activeSeries, newestMember])
+
+  // "Weekly Momentum" unlocks when any member has ≥2 weeks (so delta exists)
+  const momentumUnlocked = activeSeries.some((s) => s.averages.some((a) => a.delta !== null))
+
   return (
     <div className="page">
       <header className="page-header">
@@ -286,21 +378,55 @@ export default function Battle() {
         ))}
       </div>
 
-      {/* Progress from Start — unlocks with 1 member */}
+      {/* ── Progress from Start ── */}
       <section className="section">
         <div className="section-title">Progress from Start</div>
+        <p className="sync-hint" style={{ marginBottom: 6 }}>
+          Each line starts at 0 from that person's own beginning.
+        </p>
         {activeSeries.length >= 1 ? (
-          <BattleChart series={series} height={210} normalize />
+          <BattleChart series={series} height={210} mode="fromStart" />
         ) : (
           <LockedChart height={210} message="Log weight to see your progress" />
         )}
       </section>
 
-      {/* Weekly Averages — unlocks with 2+ members */}
+      {/* ── Race from Here ── */}
+      <section className="section">
+        <div className="section-title">Race from Here</div>
+        <p className="sync-hint" style={{ marginBottom: 6 }}>
+          {newestMember
+            ? `Everyone resets to 0 when ${newestMember.user.emoji} ${newestMember.user.name} started — a level playing field.`
+            : 'Everyone resets to 0 at the newest member\'s first entry — a level playing field.'}
+        </p>
+        {raceUnlocked ? (
+          <BattleChart series={series} height={210} mode="fromJoin" />
+        ) : (
+          <LockedChart height={210} message="2+ members needed to start the race" />
+        )}
+      </section>
+
+      {/* ── Weekly Momentum ── */}
+      <section className="section">
+        <div className="section-title">Weekly Momentum</div>
+        <p className="sync-hint" style={{ marginBottom: 6 }}>
+          Week-over-week change. Competing on recent pace, not total history.
+        </p>
+        {momentumUnlocked ? (
+          <BattleChart series={series} height={190} mode="weeklyDelta" />
+        ) : (
+          <LockedChart height={190} message="Log 2+ weeks to see your momentum" />
+        )}
+      </section>
+
+      {/* ── Weekly Averages ── */}
       <section className="section">
         <div className="section-title">Weekly Averages</div>
+        <p className="sync-hint" style={{ marginBottom: 6 }}>
+          Raw weekly averages — useful when members track in the same unit.
+        </p>
         {activeSeries.length >= 2 ? (
-          <BattleChart series={series} height={210} />
+          <BattleChart series={series} height={210} mode="absolute" />
         ) : (
           <LockedChart height={210} message="2+ members needed to compare" />
         )}
@@ -309,7 +435,7 @@ export default function Battle() {
   )
 }
 
-// ─── Helpers (mirrored from WeightChart for independence) ─────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function catmullRomPath(points: { x: number; y: number }[]): string {
   if (points.length === 0) return ''
