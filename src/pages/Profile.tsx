@@ -146,8 +146,10 @@ export default function Profile() {
     try {
       const cfg = { token: ghConfig.token, repo: ghConfig.repo }
       const { users: remoteUsers, sha: usersSha } = await fetchUsers(cfg)
+      const tombstones = new Set(storage.loadDeletedUserIds())
+      const filteredRemote = remoteUsers.filter((u) => !tombstones.has(u.id))
       const { users: localUsers } = useAppStore.getState()
-      const allIds = new Set([...localUsers.map((u) => u.id), ...remoteUsers.map((u) => u.id)])
+      const allIds = new Set([...localUsers.map((u) => u.id), ...filteredRemote.map((u) => u.id)])
       const remoteEntries: import('@/types').WeightEntry[] = []
       const entryShas: Record<string, string | null> = {}
       for (const uid of allIds) {
@@ -155,8 +157,8 @@ export default function Profile() {
         remoteEntries.push(...ue)
         entryShas[uid] = sha
       }
-      // Merge remote into local (preserves unsynced local entries)
-      useAppStore.getState().mergeData(remoteUsers, remoteEntries)
+      // Merge remote into local (tombstoned users excluded)
+      useAppStore.getState().mergeData(filteredRemote, remoteEntries.filter((e) => !tombstones.has(e.userId)))
       // Push the merged state so remote is also up-to-date
       const merged = useAppStore.getState()
       await pushUsers(cfg, merged.users, usersSha)
@@ -164,6 +166,7 @@ export default function Profile() {
         const ue = merged.entries.filter((e) => e.userId === u.id)
         await pushEntries(cfg, u.id, ue, entryShas[u.id] ?? null, u.name)
       }
+      storage.saveDeletedUserIds([])
       storage.saveGitHubConfig({ ...ghConfig, lastSynced: new Date().toISOString() })
       setSyncFlash('ok')
       setSyncVersion((v) => v + 1)  // discard any unsaved form edits

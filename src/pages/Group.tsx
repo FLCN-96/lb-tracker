@@ -11,7 +11,7 @@ function FloppyIcon() {
 }
 import { useGroupSnapshot } from '@/hooks/useWeightData'
 import { useAppStore } from '@/store/useAppStore'
-import { formatWeight, formatDelta } from '@/utils/weightCalc'
+import { formatWeight, formatDelta, todayStr } from '@/utils/weightCalc'
 import { storage } from '@/services/storage'
 import { fetchUsers, fetchEntries, pushUsers, pushEntries } from '@/services/github'
 import { AVAILABLE_EMOJIS } from '@/types'
@@ -146,7 +146,7 @@ export default function Group() {
         </p>
       ) : (
         <ul className="member-list">
-          {members.map(({ user, currentWeek }) => {
+          {members.map(({ user, currentWeek, lastLoggedDate }) => {
             const isActive    = user.id === activeUserId
             const isRemoving  = user.id === removingId
             const entryCount  = entries.filter((e) => e.userId === user.id).length
@@ -196,7 +196,12 @@ export default function Group() {
                       <div className="member-avatar">{user.emoji}</div>
                       <div className="member-info">
                         <span className="member-name">{user.name}</span>
-                        <span className="member-unit">{user.unit}</span>
+                        <span className="member-unit">
+                          {user.unit}
+                          {lastLoggedDate && (
+                            <span className="member-last-logged"> · {formatLastLogged(lastLoggedDate)}</span>
+                          )}
+                        </span>
                       </div>
                       <div className="member-stats">
                         {currentWeek ? (
@@ -297,6 +302,20 @@ export default function Group() {
       )}
     </div>
   )
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatLastLogged(dateStr: string): string {
+  const today = todayStr()
+  const todayMs = new Date(today + 'T12:00:00Z').getTime()
+  const entryMs = new Date(dateStr + 'T12:00:00Z').getTime()
+  const diffDays = Math.round((todayMs - entryMs) / 86_400_000)
+  if (diffDays === 0) return 'today'
+  if (diffDays === 1) return 'yest.'
+  if (diffDays < 7)  return `${diffDays}d ago`
+  if (diffDays < 14) return '1w ago'
+  return `${Math.floor(diffDays / 7)}w ago`
 }
 
 // ─── Add member inline form ───────────────────────────────────────────────────

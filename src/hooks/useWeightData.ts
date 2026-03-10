@@ -51,7 +51,11 @@ export function useGroupSnapshot() {
   return useMemo(() => {
     return users.map((user) => {
       const { current } = getRecentWeeks(user.id, entries, user.weekStartDay ?? 1)
-      return { user, currentWeek: current }
+      const userEntries = entries.filter((e) => e.userId === user.id)
+      const lastLoggedDate = userEntries.length > 0
+        ? userEntries.reduce((latest, e) => (e.date > latest ? e.date : latest), userEntries[0].date)
+        : null
+      return { user, currentWeek: current, lastLoggedDate }
     })
   }, [users, entries])
 }

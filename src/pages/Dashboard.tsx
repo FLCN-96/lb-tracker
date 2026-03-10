@@ -47,8 +47,10 @@ export default function Dashboard() {
     setSyncFlash(null)
     try {
       const { users: remoteUsers, sha: usersSha } = await fetchUsers(cfg)
+      const tombstones = new Set(storage.loadDeletedUserIds())
+      const filteredRemote = remoteUsers.filter((u) => !tombstones.has(u.id))
       const { users: localUsers } = useAppStore.getState()
-      const allUserIds = new Set([...localUsers.map((u) => u.id), ...remoteUsers.map((u) => u.id)])
+      const allUserIds = new Set([...localUsers.map((u) => u.id), ...filteredRemote.map((u) => u.id)])
       const remoteEntries: import('@/types').WeightEntry[] = []
       const entryShas: Record<string, string | null> = {}
       for (const uid of allUserIds) {
@@ -56,13 +58,14 @@ export default function Dashboard() {
         remoteEntries.push(...ue)
         entryShas[uid] = sha
       }
-      mergeData(remoteUsers, remoteEntries)
+      mergeData(filteredRemote, remoteEntries.filter((e) => !tombstones.has(e.userId)))
       const merged = useAppStore.getState()
       await pushUsers(cfg, merged.users, usersSha)
       for (const u of merged.users) {
         const ue = merged.entries.filter((e) => e.userId === u.id)
         await pushEntries(cfg, u.id, ue, entryShas[u.id] ?? null, u.name)
       }
+      storage.saveDeletedUserIds([])
       storage.saveGitHubConfig({ ...ghConfig, lastSynced: new Date().toISOString() })
       setSyncFlash('ok')
       setTimeout(() => setSyncFlash(null), 2000)

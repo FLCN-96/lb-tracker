@@ -537,6 +537,7 @@ html.ios-standalone #root {
 .member-info { flex: 1; }
 .member-name { display: block; font-weight: 700; font-size: 15px; }
 .member-unit { font-size: 12px; color: var(--color-text-muted); }
+.member-last-logged { opacity: 0.75; }
 
 .member-stats { text-align: right; }
 .member-avg   { display: block; font-weight: 700; font-size: 16px; }
