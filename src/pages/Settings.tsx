@@ -57,6 +57,9 @@ export default function Settings() {
   const [importText, setImportText] = useState('')
   const [importResult, setImportResult] = useState<{ added: number; skipped: number } | null>(null)
 
+  // Export
+  const [copyFlash, setCopyFlash] = useState(false)
+
   // Keep form in sync when the store is updated externally (e.g. after a sync).
   // syncVersion is bumped after every sync so the form resets even when the
   // stored values didn't change (e.g. unsaved edits get discarded on sync).
@@ -380,6 +383,48 @@ export default function Settings() {
           >
             View all {userEntries.length} entr{userEntries.length === 1 ? 'y' : 'ies'}
           </button>
+        )}
+      </section>
+
+      {/* ── Export Records ── */}
+      <section className="section">
+        <div className="section-title">Export Records</div>
+        {userEntries.length === 0 ? (
+          <p className="empty-state">No entries to export yet.</p>
+        ) : (
+          <>
+            <p className="sync-hint">
+              Your {userEntries.length} entr{userEntries.length === 1 ? 'y' : 'ies'} in <code>yyyy-mm-dd,weight</code> format — ready to copy or paste elsewhere.
+            </p>
+            <textarea
+              className="import-textarea"
+              rows={6}
+              readOnly
+              spellCheck={false}
+              value={[...userEntries]
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .map((e) => `${e.date},${e.weight}`)
+                .join('\n')}
+              onFocus={(e) => e.currentTarget.select()}
+            />
+            <button
+              type="button"
+              className={`btn btn--full ${copyFlash ? 'btn--saved' : 'btn--secondary'}`}
+              style={{ marginTop: 8 }}
+              onClick={() => {
+                const text = [...userEntries]
+                  .sort((a, b) => a.date.localeCompare(b.date))
+                  .map((e) => `${e.date},${e.weight}`)
+                  .join('\n')
+                navigator.clipboard.writeText(text).then(() => {
+                  setCopyFlash(true)
+                  setTimeout(() => setCopyFlash(false), 2000)
+                })
+              }}
+            >
+              {copyFlash ? 'Copied ✓' : 'Copy to Clipboard'}
+            </button>
+          </>
         )}
       </section>
 
