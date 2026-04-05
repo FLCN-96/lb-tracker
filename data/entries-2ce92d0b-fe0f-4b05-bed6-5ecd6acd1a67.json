@@ -562,5 +562,47 @@
     "weight": 185.4,
     "date": "2026-03-29",
     "createdAt": "2026-03-29T17:47:11.764Z"
+  },
+  {
+    "id": "3f4321f3-d903-49be-838b-4b95d8404403",
+    "userId": "2ce92d0b-fe0f-4b05-bed6-5ecd6acd1a67",
+    "weight": 183.6,
+    "date": "2026-03-30",
+    "createdAt": "2026-03-31T02:46:31.940Z"
+  },
+  {
+    "id": "19ffcb5d-39e0-4c2d-ab9a-a631910cbaf3",
+    "userId": "2ce92d0b-fe0f-4b05-bed6-5ecd6acd1a67",
+    "weight": 184.6,
+    "date": "2026-03-31",
+    "createdAt": "2026-03-31T17:01:22.432Z"
+  },
+  {
+    "id": "1247be6b-86dd-4618-9fd0-4c3facc1139d",
+    "userId": "2ce92d0b-fe0f-4b05-bed6-5ecd6acd1a67",
+    "weight": 183.4,
+    "date": "2026-04-01",
+    "createdAt": "2026-04-01T15:32:04.283Z"
+  },
+  {
+    "id": "15db8d6f-ec1b-4fca-a166-1bd8f366e18f",
+    "userId": "2ce92d0b-fe0f-4b05-bed6-5ecd6acd1a67",
+    "weight": 184.8,
+    "date": "2026-04-02",
+    "createdAt": "2026-04-02T15:54:07.483Z"
+  },
+  {
+    "id": "a471e72a-06a1-4738-9580-029cd59823fd",
+    "userId": "2ce92d0b-fe0f-4b05-bed6-5ecd6acd1a67",
+    "weight": 187.6,
+    "date": "2026-04-03",
+    "createdAt": "2026-04-05T00:51:03.096Z"
+  },
+  {
+    "id": "30cb6ece-cc02-4c3d-acce-4fe8f107e429",
+    "userId": "2ce92d0b-fe0f-4b05-bed6-5ecd6acd1a67",
+    "weight": 186.8,
+    "date": "2026-04-04",
+    "createdAt": "2026-04-05T00:51:12.672Z"
   }
 ]
