@@ -660,5 +660,33 @@
     "weight": 186.8,
     "date": "2026-04-07",
     "createdAt": "2026-04-12T14:57:08.918Z"
+  },
+  {
+    "id": "8aada0a3-aacb-46ec-b7c8-f5b4cd839ed1",
+    "userId": "2ce92d0b-fe0f-4b05-bed6-5ecd6acd1a67",
+    "weight": 181.8,
+    "date": "2026-04-13",
+    "createdAt": "2026-04-13T18:42:24.690Z"
+  },
+  {
+    "id": "e349bbb8-9c31-458d-9529-076931d73633",
+    "userId": "2ce92d0b-fe0f-4b05-bed6-5ecd6acd1a67",
+    "weight": 181,
+    "date": "2026-04-14",
+    "createdAt": "2026-04-14T14:11:22.023Z"
+  },
+  {
+    "id": "6435e30b-ab3d-4916-ab65-fe2d2c1ac22e",
+    "userId": "2ce92d0b-fe0f-4b05-bed6-5ecd6acd1a67",
+    "weight": 181.4,
+    "date": "2026-04-15",
+    "createdAt": "2026-04-16T03:28:56.264Z"
+  },
+  {
+    "id": "3b5c8e54-2ad3-4975-98fb-eb8f2ee5674e",
+    "userId": "2ce92d0b-fe0f-4b05-bed6-5ecd6acd1a67",
+    "weight": 181.6,
+    "date": "2026-04-16",
+    "createdAt": "2026-04-16T17:03:44.247Z"
   }
 ]
