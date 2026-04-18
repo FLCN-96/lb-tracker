@@ -43,12 +43,13 @@ export default function WeightChart({ data, unit, height = 180, dailyEntries = [
   )
 
   const tfBar = (
-    <div className="chart-tf-bar">
+    <div className="chart-tf-bar" data-testid="chart-tf-bar">
       {TF_OPTIONS.map((opt) => (
         <button
           key={opt.value}
           className={`chart-tf-btn${frame === opt.value ? ' chart-tf-btn--active' : ''}`}
           onClick={() => setFrame(opt.value)}
+          data-testid={`chart-tf-${opt.value}`}
         >
           {opt.label}
         </button>
@@ -58,7 +59,7 @@ export default function WeightChart({ data, unit, height = 180, dailyEntries = [
 
   if (data.length < 1) {
     return (
-      <div className="chart-wrap">
+      <div className="chart-wrap" data-testid="chart">
         {tfBar}
         <div className="chart-empty">Log entries to see your trend</div>
       </div>
@@ -67,7 +68,7 @@ export default function WeightChart({ data, unit, height = 180, dailyEntries = [
 
   if (filteredData.length < 1) {
     return (
-      <div className="chart-wrap">
+      <div className="chart-wrap" data-testid="chart">
         {tfBar}
         <div className="chart-empty">No entries in this period</div>
       </div>
@@ -152,7 +153,7 @@ export default function WeightChart({ data, unit, height = 180, dailyEntries = [
   lineSegs.push({ pts: run, isGap: false })
 
   return (
-    <div className="chart-wrap">
+    <div className="chart-wrap" data-testid="chart">
       {tfBar}
       <svg
         viewBox={`0 0 ${VB_W} ${height}`}

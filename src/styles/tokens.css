@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+/* ─── Design tokens — mirrors index.css :root vars ──────────────────────────
+   Tailwind v4 reads these and generates utility classes:
+   bg-primary, text-muted, border-border, rounded-md, shadow-sm, etc.
+   Same variable names as index.css so there is zero collision during
+   the incremental migration — both systems read the same CSS custom props.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@theme inline {
+  /* ── Colors ── */
+  --color-primary:       var(--color-primary);
+  --color-primary-mid:   var(--color-primary-mid);
+  --color-primary-light: var(--color-primary-light);
+  --color-down:          var(--color-down);
+  --color-up:            var(--color-up);
+  --color-accent:        #f59e0b;   /* amber — streaks / achievements */
+  --color-accent-soft:   #fef3c7;
+
+  --color-bg:            var(--color-bg);
+  --color-bg-alt:        var(--color-bg-alt);
+  --color-surface:       var(--color-surface);
+  --color-surface-2:     var(--color-surface-2);
+  --color-border:        var(--color-border);
+  --color-border-light:  var(--color-border-light);
+  --color-overlay:       var(--color-overlay);
+
+  --color-text:          var(--color-text);
+  --color-text-2:        var(--color-text-2);
+  --color-text-muted:    var(--color-text-muted);
+
+  /* ── Spacing ── */
+  --spacing-xs:  4px;
+  --spacing-sm:  8px;
+  --spacing-md:  16px;
+  --spacing-lg:  24px;
+  --spacing-xl:  36px;
+
+  /* ── Radii ── */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-xl: 32px;
+
+  /* ── Shadows ── */
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+
+  /* ── Typography ── */
+  --font-sans: var(--font-sans);
+}
+
+/* ─── Dark-mode accent override ────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  @theme inline {
+    --color-accent:      #fbbf24;
+    --color-accent-soft: #451a03;
+  }
+}

@@ -1,4 +1,8 @@
 import { useMemo, useState } from 'react'
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, ReferenceLine, ResponsiveContainer,
+} from 'recharts'
 import { useAppStore } from '@/store/useAppStore'
 import { computeWeeklyAverages } from '@/utils/weightCalc'
 import type { User, WeeklyAverage } from '@/types'
@@ -32,7 +36,7 @@ interface PlotPoint {
   vals: (number | null)[]
 }
 
-// ─── Multi-series chart ───────────────────────────────────────────────────────
+// ─── Multi-series chart (Recharts) ───────────────────────────────────────────
 
 function BattleChart({
   series,
@@ -54,7 +58,6 @@ function BattleChart({
     return d.toISOString().split('T')[0]
   }, [frame])
 
-  // Filter each series to the selected time frame
   const active = useMemo(() => {
     const withData = series.filter((s) => s.averages.length > 0)
     if (!cutoffDate) return withData
@@ -63,12 +66,10 @@ function BattleChart({
       .filter((s) => s.averages.length > 0)
   }, [series, cutoffDate])
 
-  // Compute x-axis week keys and y-values per series based on mode
   const { allWeekKeys, plotPoints } = useMemo((): { allWeekKeys: string[]; plotPoints: PlotPoint[] } => {
     if (active.length === 0) return { allWeekKeys: [], plotPoints: [] }
 
     if (mode === 'fromJoin') {
-      // Race baseline: the first week of whoever joined latest (within the time frame)
       const raceStart = active.reduce((latest, s) => {
         const first = s.averages[0]?.weekKey ?? ''
         return first > latest ? first : latest
@@ -141,6 +142,16 @@ function BattleChart({
 
   const isRelative = mode !== 'absolute'
 
+  // Last non-null index per user — drives the emoji tail dot
+  const lastNonNullByUser = new Map<string, number>()
+  for (const { series: s, vals } of plotPoints) {
+    let lastIdx = -1
+    for (let i = 0; i < vals.length; i++) {
+      if (vals[i] !== null) lastIdx = i
+    }
+    lastNonNullByUser.set(s.user.id, lastIdx)
+  }
+
   const tfBar = (
     <div className="chart-tf-bar">
       {TF_OPTIONS.map((opt) => (
@@ -164,118 +175,99 @@ function BattleChart({
     )
   }
 
-  const n = allWeekKeys.length
-  const flat = plotPoints.flatMap((p) => p.vals).filter((v): v is number => v !== null)
-  if (flat.length === 0) return <div className="chart-empty">No data in this period</div>
-
-  const minV = Math.min(...flat)
-  const maxV = Math.max(...flat)
-  const rawRange = maxV - minV
-  const range = rawRange < 2 ? 4 : rawRange
-  const paddedMin = isRelative ? Math.min(minV - range * 0.12, -1) : minV - range * 0.12
-  const paddedMax = isRelative ? Math.max(maxV + range * 0.12, 1) : maxV + range * 0.12
-
-  const innerW = VB_W - PAD.left - PAD.right
-  const innerH = height - PAD.top - PAD.bottom
-  const toX = (i: number) => PAD.left + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW)
-  const toY = (v: number) => PAD.top + (1 - (v - paddedMin) / (paddedMax - paddedMin)) * innerH
-  const bottomY = PAD.top + innerH
-
-  const yTicks = isRelative
-    ? [paddedMax, 0, paddedMin]
-    : [paddedMax, (paddedMax + paddedMin) / 2, paddedMin]
-
-  const xLabelIdxs = selectLabelIndices(n, 5)
-  const zeroY = isRelative ? toY(0) : null
+  // Convert to Recharts row format: { weekKey, [userId]: value | null, ... }
+  const chartData = allWeekKeys.map((weekKey, i) => {
+    const row: Record<string, string | number | null> = { weekKey }
+    for (const { series: s, vals } of plotPoints) {
+      row[s.user.id] = vals[i]
+    }
+    return row
+  })
 
   return (
     <div className="chart-wrap">
       {tfBar}
-      <svg
-        viewBox={`0 0 ${VB_W} ${height}`}
-        width="100%"
-        height={height}
-        overflow="visible"
-        role="img"
-        aria-label="Comparison chart"
-      >
-        {/* Grid + Y labels */}
-        {yTicks.map((tick, ti) => {
-          const y = toY(tick)
-          return (
-            <g key={ti}>
-              <line
-                x1={PAD.left} y1={y} x2={VB_W - PAD.right} y2={y}
-                stroke="var(--color-border)" strokeWidth="0.8" strokeDasharray="3 4"
-              />
-              <text
-                x={PAD.left - 5} y={y}
-                textAnchor="end" dominantBaseline="middle"
-                fontSize="9" fill="var(--color-text-muted)" fontFamily="var(--font-sans)"
-              >
-                {isRelative ? `${tick > 0 ? '+' : ''}${tick.toFixed(0)}` : tick.toFixed(0)}
-              </text>
-            </g>
-          )
-        })}
-
-        {/* Zero reference line for relative charts */}
-        {zeroY !== null && (
-          <line
-            x1={PAD.left} y1={zeroY} x2={VB_W - PAD.right} y2={zeroY}
-            stroke="var(--color-text-muted)" strokeWidth="1.5"
-            strokeDasharray="5 3" opacity="0.45"
+      <ResponsiveContainer width="100%" height={height}>
+        <LineChart data={chartData} margin={{ top: 16, right: 44, bottom: 20, left: 0 }}>
+          <CartesianGrid
+            strokeDasharray="3 4"
+            stroke="var(--color-border)"
+            strokeWidth={0.8}
+            vertical={false}
           />
-        )}
-
-        {/* X baseline */}
-        <line
-          x1={PAD.left} y1={bottomY} x2={VB_W - PAD.right} y2={bottomY}
-          stroke="var(--color-border)" strokeWidth="1"
-        />
-
-        {/* X labels */}
-        {xLabelIdxs.map((i) => (
-          <text
-            key={i} x={toX(i)} y={height - 4}
-            textAnchor="middle" fontSize="9"
-            fill="var(--color-text-muted)" fontFamily="var(--font-sans)"
-          >
-            {shortWeekLabel(allWeekKeys[i])}
-          </text>
-        ))}
-
-        {/* Per-user lines + final dot + emoji tail */}
-        {plotPoints.map(({ series: s, vals }) => {
-          const pts: { x: number; y: number }[] = []
-          for (let i = 0; i < n; i++) {
-            const v = vals[i]
-            if (v !== null) pts.push({ x: toX(i), y: toY(v) })
-          }
-          if (pts.length === 0) return null
-
-          const linePath = catmullRomPath(pts)
-          const last = pts[pts.length - 1]
-
-          return (
-            <g key={s.user.id}>
-              <path
-                d={linePath} fill="none"
-                stroke={s.color} strokeWidth="2.5"
-                strokeLinecap="round" strokeLinejoin="round"
+          <XAxis
+            dataKey="weekKey"
+            tickFormatter={shortWeekLabel}
+            tick={{ fontSize: 9, fill: 'var(--color-text-muted)', fontFamily: 'var(--font-sans)' }}
+            tickLine={false}
+            axisLine={{ stroke: 'var(--color-border)', strokeWidth: 1 }}
+            interval="preserveStartEnd"
+          />
+          <YAxis
+            tickFormatter={(v: number) =>
+              isRelative ? `${v > 0 ? '+' : ''}${v.toFixed(0)}` : v.toFixed(0)
+            }
+            tick={{ fontSize: 9, fill: 'var(--color-text-muted)', fontFamily: 'var(--font-sans)' }}
+            tickLine={false}
+            axisLine={false}
+            tickCount={3}
+            width={34}
+          />
+          {isRelative && (
+            <ReferenceLine
+              y={0}
+              stroke="var(--color-text-muted)"
+              strokeWidth={1.5}
+              strokeDasharray="5 3"
+              opacity={0.45}
+            />
+          )}
+          <Tooltip
+            contentStyle={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 8,
+              fontSize: 12,
+              fontFamily: 'var(--font-sans)',
+            }}
+            formatter={(value: number) =>
+              isRelative ? `${value > 0 ? '+' : ''}${value.toFixed(1)}` : value.toFixed(1)
+            }
+            labelFormatter={shortWeekLabel}
+          />
+          {plotPoints.map(({ series: s, vals }) => {
+            const lastIdx = lastNonNullByUser.get(s.user.id) ?? -1
+            return (
+              <Line
+                key={s.user.id}
+                type="monotone"
+                dataKey={s.user.id}
+                stroke={s.color}
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                dot={(props: {cx?: number; cy?: number; index?: number}) => {
+                  const { cx, cy, index } = props
+                  if (cx == null || cy == null || index !== lastIdx) {
+                    return <circle key={`dot-${s.user.id}-${index}`} cx={cx ?? 0} cy={cy ?? 0} r={0} fill="none" />
+                  }
+                  return (
+                    <g key={`dot-${s.user.id}-${index}`}>
+                      <circle cx={cx} cy={cy} r={5} fill={s.color} />
+                      <text x={cx + 9} y={cy + 5} fontSize={15} textAnchor="start" style={{ userSelect: 'none' }}>
+                        {s.user.emoji}
+                      </text>
+                    </g>
+                  )
+                }}
+                activeDot={{ r: 5, fill: s.color }}
+                connectNulls={false}
+                name={`${s.user.emoji} ${s.user.name}`}
               />
-              <circle cx={last.x} cy={last.y} r={5} fill={s.color} stroke={s.color} strokeWidth="2" />
-              <text
-                x={last.x + 9} y={last.y + 5}
-                fontSize="15" textAnchor="start"
-                style={{ userSelect: 'none' }}
-              >
-                {s.user.emoji}
-              </text>
-            </g>
-          )
-        })}
-      </svg>
+            )
+          })}
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   )
 }
@@ -333,8 +325,6 @@ export default function Battle() {
 
   const activeSeries = series.filter((s) => s.averages.length > 0)
 
-  // The "newest" member = whoever has the latest first entry.
-  // Used to label the Race from Here section.
   const newestMember = useMemo((): SeriesData | null => {
     if (activeSeries.length < 2) return null
     return activeSeries.reduce((latest, s) => {
@@ -344,9 +334,6 @@ export default function Battle() {
     }, activeSeries[0])
   }, [activeSeries])
 
-  // "Race from Here" unlocks when 2+ members have data that overlaps at/after
-  // the newest member's first entry. We check this by seeing if at least 2
-  // series have data at or after newestMember's first weekKey.
   const raceUnlocked = useMemo(() => {
     if (!newestMember) return false
     const raceStart = newestMember.averages[0]?.weekKey ?? ''
@@ -356,11 +343,10 @@ export default function Battle() {
     return participating.length >= 2
   }, [activeSeries, newestMember])
 
-  // "Weekly Momentum" unlocks when any member has ≥2 weeks (so delta exists)
   const momentumUnlocked = activeSeries.some((s) => s.averages.some((a) => a.delta !== null))
 
   return (
-    <div className="page">
+    <div className="page" data-testid="battle-section">
       <header className="page-header">
         <div>
           <h1 className="page-title">Battle</h1>
@@ -436,31 +422,6 @@ export default function Battle() {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function catmullRomPath(points: { x: number; y: number }[]): string {
-  if (points.length === 0) return ''
-  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`
-  let path = `M ${points[0].x} ${points[0].y}`
-  const alpha = 0.4
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[Math.max(0, i - 1)]
-    const p1 = points[i]
-    const p2 = points[i + 1]
-    const p3 = points[Math.min(points.length - 1, i + 2)]
-    const cp1x = p1.x + ((p2.x - p0.x) * alpha) / 2
-    const cp1y = p1.y + ((p2.y - p0.y) * alpha) / 2
-    const cp2x = p2.x - ((p3.x - p1.x) * alpha) / 2
-    const cp2y = p2.y - ((p3.y - p1.y) * alpha) / 2
-    path += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`
-  }
-  return path
-}
-
-function selectLabelIndices(total: number, max: number): number[] {
-  if (total <= max) return Array.from({ length: total }, (_, i) => i)
-  const step = (total - 1) / (max - 1)
-  return Array.from({ length: max }, (_, i) => Math.round(i * step))
-}
 
 function shortWeekLabel(weekKey: string): string {
   const [, m, d] = weekKey.split('-')

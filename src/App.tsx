@@ -8,6 +8,7 @@ import Group from '@/pages/Group'
 import Profile from '@/pages/Profile'
 import Battle from '@/pages/Battle'
 import Settings from '@/pages/Settings'
+import { Toaster } from '@/components/ui/Toaster'
 
 export default function App() {
   const hydrate = useAppStore((s) => s.hydrate)
@@ -29,17 +30,20 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter basename="/lb-tracker">
-      <Routes>
-        <Route element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="group" element={<Group />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="battle" element={<Battle />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <>
+      <Toaster />
+      <BrowserRouter basename="/lb-tracker">
+        <Routes>
+          <Route element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="group" element={<Group />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="battle" element={<Battle />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </>
   )
 }
