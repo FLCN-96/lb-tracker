@@ -59,12 +59,13 @@ export default function EmojiLogin({ onDone }: Props) {
           </p>
         </div>
 
-        <div className="profile-grid">
+        <div className="profile-grid" data-testid="profile-grid">
           {users.map((u) => (
             <button
               key={u.id}
               className="profile-card"
               onClick={() => handleSelectExisting(u.id)}
+              data-testid="profile-card"
             >
               <span className="profile-card__emoji">{u.emoji}</span>
               <span className="profile-card__name">{u.name}</span>
@@ -75,6 +76,7 @@ export default function EmojiLogin({ onDone }: Props) {
             <button
               className="add-profile-btn"
               onClick={() => setStep('new-emoji')}
+              data-testid="add-profile-btn"
             >
               <span className="add-profile-btn__icon">＋</span>
               <span>Add</span>
@@ -96,12 +98,13 @@ export default function EmojiLogin({ onDone }: Props) {
       <div className="login-screen">
         <h1 className="login-title" style={{ fontSize: 22 }}>Pick your emoji</h1>
 
-        <div className="emoji-grid" style={{ maxWidth: 260 }}>
+        <div className="emoji-grid" style={{ maxWidth: 260 }} data-testid="emoji-picker">
           {availableEmojis.map((e) => (
             <button
               key={e}
               className={`emoji-opt ${selectedEmoji === e ? 'emoji-opt--selected' : ''}`}
               onClick={() => handleEmojiChosen(e)}
+              data-testid={`emoji-opt-${e}`}
             >
               {e}
             </button>
@@ -130,6 +133,7 @@ export default function EmojiLogin({ onDone }: Props) {
           onChange={(e) => { setName(e.target.value); setError(null) }}
           maxLength={24}
           autoFocus
+          data-testid="name-input"
         />
 
         {error && <p className="form-error">{error}</p>}

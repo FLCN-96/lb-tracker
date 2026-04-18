@@ -61,12 +61,13 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      <nav className="tab-bar" role="navigation" aria-label="Main navigation">
+      <nav className="tab-bar" role="navigation" aria-label="Main navigation" data-testid="tab-nav">
         <NavLink
           to="/"
           end
           className={({ isActive }) => `tab-item${isActive ? ' tab-item--active' : ''}`}
           aria-label="Home"
+          data-testid="tab-home"
         >
           <span className="tab-icon" aria-hidden="true"><HomeIcon /></span>
           <span className="tab-label">Home</span>
@@ -76,6 +77,7 @@ export default function Layout() {
           to="/profile"
           className={({ isActive }) => `tab-item${isActive ? ' tab-item--active' : ''}`}
           aria-label="Profile"
+          data-testid="tab-profile"
         >
           <span className="tab-icon" aria-hidden="true"><PersonIcon /></span>
           <span className="tab-label">{profileLabel}</span>
@@ -85,6 +87,7 @@ export default function Layout() {
           to="/battle"
           className={({ isActive }) => `tab-item${isActive ? ' tab-item--active' : ''}`}
           aria-label="Battle"
+          data-testid="tab-battle"
         >
           <span className="tab-icon" aria-hidden="true"><TrophyIcon /></span>
           <span className="tab-label">Battle</span>
@@ -94,6 +97,7 @@ export default function Layout() {
           to="/group"
           className={({ isActive }) => `tab-item${isActive ? ' tab-item--active' : ''}`}
           aria-label="Group"
+          data-testid="tab-group"
         >
           <span className="tab-icon" aria-hidden="true"><GroupIcon /></span>
           <span className="tab-label">Group</span>
@@ -103,6 +107,7 @@ export default function Layout() {
           to="/settings"
           className={({ isActive }) => `tab-item${isActive ? ' tab-item--active' : ''}`}
           aria-label="Settings"
+          data-testid="tab-settings"
         >
           <span className="tab-icon" aria-hidden="true"><GearIcon /></span>
           <span className="tab-label">Settings</span>

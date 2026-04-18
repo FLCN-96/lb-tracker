@@ -360,7 +360,7 @@ export default function Battle() {
   const momentumUnlocked = activeSeries.some((s) => s.averages.some((a) => a.delta !== null))
 
   return (
-    <div className="page">
+    <div className="page" data-testid="battle-section">
       <header className="page-header">
         <div>
           <h1 className="page-title">Battle</h1>

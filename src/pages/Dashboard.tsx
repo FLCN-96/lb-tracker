@@ -122,6 +122,7 @@ export default function Dashboard() {
                 onClick={handleQuickSync}
                 disabled={syncing}
                 aria-label="Sync with GitHub"
+                data-testid="sync-btn"
               >
                 ↻
               </button>
@@ -145,7 +146,7 @@ export default function Dashboard() {
               : "Log today's weight"}
           </p>
 
-          <form className="log-inline" onSubmit={handleQuickLog}>
+          <form className="log-inline" onSubmit={handleQuickLog} data-testid="quick-log-form">
             <input
               type="number"
               inputMode="decimal"
@@ -156,6 +157,7 @@ export default function Dashboard() {
               placeholder={hasLoggedToday ? (latestTodayWeight?.toFixed(1) ?? '—') : '0.0'}
               value={weightInput}
               onChange={(e) => setWeightInput(e.target.value)}
+              data-testid="quick-log-input"
             />
             <span className="log-inline__unit">{user.unit}</span>
 
@@ -163,6 +165,7 @@ export default function Dashboard() {
               type="submit"
               className={`btn log-save-btn ${logSaved ? 'btn--saved' : `btn--primary${weightInput ? ' btn--pulse' : ''}`}`}
               disabled={!weightInput}
+              data-testid="quick-log-save"
             >
               {logSaved ? '✓' : 'Save'}
             </button>
@@ -173,6 +176,7 @@ export default function Dashboard() {
               className="log-expand-btn"
               style={{ flex: 1, justifyContent: 'center' }}
               onClick={() => setShowExpand(true)}
+              data-testid="expand-log-btn"
             >
               <span>↕</span>
               Adjust recent values
@@ -185,7 +189,7 @@ export default function Dashboard() {
           <div className="section">
             <div className="section-title">This week</div>
             <div className="stat-grid">
-              <div className="stat-card">
+              <div className="stat-card" data-testid="stat-weekly-avg">
                 <span className="stat-label">Weekly Avg</span>
                 <span className="stat-value">
                   {currentWeek ? formatWeight(currentWeek.average, user.unit) : '—'}
@@ -201,7 +205,7 @@ export default function Dashboard() {
                 </span>
               </div>
 
-              <div className="stat-card">
+              <div className="stat-card" data-testid="stat-vs-last-week">
                 <span className="stat-label">vs Last Week</span>
                 <span
                   className={`stat-value ${
@@ -216,7 +220,7 @@ export default function Dashboard() {
                 </span>
               </div>
 
-              <div className="stat-card">
+              <div className="stat-card" data-testid="stat-total-lost">
                 <span className="stat-label">Total Lost</span>
                 <span className="stat-value stat-value--down">
                   {totalLost !== null && totalLost > 0
@@ -228,7 +232,7 @@ export default function Dashboard() {
                 <span className="stat-sub">all time</span>
               </div>
 
-              <div className="stat-card">
+              <div className="stat-card" data-testid="stat-streak">
                 <span className="stat-label">Streak</span>
                 <span className="stat-value stat-value--primary">{streak}</span>
                 <span className="stat-sub">week{streak !== 1 ? 's' : ''}</span>
@@ -288,13 +292,13 @@ function GoalBar({ current, start, goal, unit }: {
   const done  = Math.abs(start - current)
   const pct   = total === 0 ? 100 : Math.min(100, Math.round((done / total) * 100))
   return (
-    <div className="goal-bar-wrap">
+    <div className="goal-bar-wrap" data-testid="goal-bar">
       <div className="goal-bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
         <div className="goal-bar__fill" style={{ width: `${pct}%` }} />
       </div>
       <div className="goal-bar__labels">
         <span>{formatWeight(start, unit)}</span>
-        <span className="goal-bar__pct">{pct}%</span>
+        <span className="goal-bar__pct" data-testid="goal-bar-pct">{pct}%</span>
         <span>{formatWeight(goal, unit)}</span>
       </div>
     </div>

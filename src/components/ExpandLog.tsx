@@ -82,7 +82,7 @@ export default function ExpandLog({ userId, unit, onClose }: Props) {
   }, [])
 
   return (
-    <div className="modal-overlay" ref={overlayRef} onClick={handleOverlayClick}>
+    <div className="modal-overlay" ref={overlayRef} onClick={handleOverlayClick} data-testid="expand-log-dialog">
       <div className="modal-dialog" ref={dialogRef} role="dialog" aria-modal="true" aria-label="Log past entries">
         <h2 className="sheet-title">Log / Edit Entries</h2>
 
