@@ -191,9 +191,8 @@ html.ios-standalone #root {
   color: var(--color-primary);
 }
 
-/* Floating pill under the active icon */
-.tab-item--active::before {
-  content: '';
+/* Floating pill — rendered as a motion.span with layoutId for animation */
+.tab-active-pill {
   position: absolute;
   top: 8px;
   left: 50%;
