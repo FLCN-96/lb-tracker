@@ -6,6 +6,8 @@ import WeightChart from '@/components/WeightChart'
 import ExpandLog from '@/components/ExpandLog'
 import { storage } from '@/services/storage'
 import { fetchUsers, fetchEntries, pushUsers, pushEntries } from '@/services/github'
+import { toast } from '@/components/ui/Toaster'
+import { RefreshCw, Check } from 'lucide-react'
 
 export default function Dashboard() {
   const data = useActiveUserData()
@@ -18,7 +20,6 @@ export default function Dashboard() {
   const [logSaved, setLogSaved] = useState(false)
   const [showExpand, setShowExpand] = useState(false)
   const [syncing, setSyncing] = useState(false)
-  const [syncFlash, setSyncFlash] = useState<'ok' | 'err' | null>(null)
   const ghConfig = storage.loadGitHubConfig()
 
   if (!user) return null  // handled by App login flow
@@ -67,11 +68,9 @@ export default function Dashboard() {
       }
       storage.saveDeletedUserIds([])
       storage.saveGitHubConfig({ ...ghConfig, lastSynced: new Date().toISOString() })
-      setSyncFlash('ok')
-      setTimeout(() => setSyncFlash(null), 2000)
+      toast.success('Synced with GitHub')
     } catch {
-      setSyncFlash('err')
-      setTimeout(() => setSyncFlash(null), 3000)
+      toast.error('Sync failed — check your token and connection')
     } finally {
       setSyncing(false)
     }
@@ -113,18 +112,19 @@ export default function Dashboard() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {hasLoggedToday && (
               <div className="today-badge">
-                <span>✓</span> Logged
+                <Check size={12} strokeWidth={2.5} /> Logged
               </div>
             )}
             {ghConfig?.token && (
               <button
-                className={`btn-sync${syncing ? ' btn-sync--spin' : ''}${syncFlash === 'ok' ? ' btn-sync--ok' : syncFlash === 'err' ? ' btn-sync--err' : ''}`}
+                className="btn-sync"
                 onClick={handleQuickSync}
                 disabled={syncing}
                 aria-label="Sync with GitHub"
                 data-testid="sync-btn"
+                style={syncing ? { animation: 'btn-sync-spin 0.7s linear infinite' } : undefined}
               >
-                ↻
+                <RefreshCw size={15} strokeWidth={2.2} />
               </button>
             )}
           </div>

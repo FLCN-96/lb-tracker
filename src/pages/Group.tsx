@@ -1,14 +1,6 @@
 import { useState, useCallback } from 'react'
-
-function FloppyIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-      <polyline points="17,21 17,13 7,13 7,21"/>
-      <polyline points="7,3 7,8 15,8"/>
-    </svg>
-  )
-}
+import { Save, RefreshCw, Check } from 'lucide-react'
+import { toast } from '@/components/ui/Toaster'
 import { useGroupSnapshot } from '@/hooks/useWeightData'
 import { useAppStore } from '@/store/useAppStore'
 import { formatWeight, formatDelta, todayStr } from '@/utils/weightCalc'
@@ -30,9 +22,7 @@ export default function Group() {
 
   const [showAdd, setShowAdd] = useState(false)
   const [syncing, setSyncing] = useState(false)
-  const [syncFlash, setSyncFlash] = useState<'ok' | 'err' | null>(null)
   const [saving, setSaving] = useState(false)
-  const [saveFlash, setSaveFlash] = useState<'ok' | 'err' | null>(null)
   const [removingId, setRemovingId] = useState<string | null>(null)
 
   const ghConfig = storage.loadGitHubConfig()
@@ -68,14 +58,11 @@ export default function Group() {
   async function handleSave() {
     if (!ghConfig?.token) return
     setSaving(true)
-    setSaveFlash(null)
     try {
       await syncWithGitHub()
-      setSaveFlash('ok')
-      setTimeout(() => setSaveFlash(null), 2000)
+      toast.success('Saved to GitHub')
     } catch {
-      setSaveFlash('err')
-      setTimeout(() => setSaveFlash(null), 3000)
+      toast.error('Save failed — check your token and connection')
     } finally {
       setSaving(false)
     }
@@ -84,14 +71,11 @@ export default function Group() {
   async function handleSync() {
     if (!ghConfig?.token) return
     setSyncing(true)
-    setSyncFlash(null)
     try {
       await syncWithGitHub()
-      setSyncFlash('ok')
-      setTimeout(() => setSyncFlash(null), 2500)
+      toast.success('Synced with GitHub')
     } catch {
-      setSyncFlash('err')
-      setTimeout(() => setSyncFlash(null), 3000)
+      toast.error('Sync failed — check your token and connection')
     } finally {
       setSyncing(false)
     }
@@ -116,24 +100,23 @@ export default function Group() {
         {ghConfig?.token && (
           <div className="header-actions">
             <button
-              className={`btn-icon${saveFlash === 'ok' ? ' btn-icon--saved' : saveFlash === 'err' ? ' btn-icon--err' : ''}`}
+              className="btn-icon"
               onClick={handleSave}
               disabled={saving}
               aria-label="Push members to GitHub"
               title="Save to GitHub"
             >
-              {saving ? '…' : saveFlash === 'ok' ? '✓' : <FloppyIcon />}
+              {saving ? <RefreshCw size={15} strokeWidth={2.2} style={{ animation: 'btn-sync-spin 0.7s linear infinite' }} /> : <Save size={15} strokeWidth={2} />}
             </button>
             <button
-              className={`btn-sync${syncing ? ' btn-sync--spin' : ''}${
-                syncFlash === 'ok' ? ' btn-sync--ok' : syncFlash === 'err' ? ' btn-sync--err' : ''
-              }`}
+              className="btn-sync"
               onClick={handleSync}
               disabled={syncing}
               aria-label="Sync with GitHub"
               title="Sync with GitHub"
+              style={syncing ? { animation: 'btn-sync-spin 0.7s linear infinite' } : undefined}
             >
-              ↻
+              <RefreshCw size={15} strokeWidth={2.2} />
             </button>
           </div>
         )}

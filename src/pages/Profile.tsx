@@ -2,6 +2,8 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { useAppStore, selectActiveUser } from '@/store/useAppStore'
 import { storage } from '@/services/storage'
 import { fetchUsers, fetchEntries, pushUsers, pushEntries } from '@/services/github'
+import { toast } from '@/components/ui/Toaster'
+import { Save, RefreshCw, Check } from 'lucide-react'
 import {
   computeWeeklyAverages, computeTrend, computeOLS, computeDescriptives,
   mannKendall, runsTest, computeResiduals, computeACF, normalQuantile,
@@ -34,17 +36,6 @@ function randomHex(): string {
   return '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0')
 }
 
-// ─── Floppy-disk save icon (inline SVG) ───────────────────────────────────────
-function FloppyIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-      <polyline points="17,21 17,13 7,13 7,21"/>
-      <polyline points="7,3 7,8 15,8"/>
-    </svg>
-  )
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Profile() {
@@ -60,7 +51,6 @@ export default function Profile() {
 
   const [saved, setSaved] = useState(false)
   const [syncing, setSyncing] = useState(false)
-  const [syncFlash, setSyncFlash] = useState<'ok' | 'err' | null>(null)
   const [syncVersion, setSyncVersion] = useState(0)
 
   // Keep form in sync when the store is updated externally, or when a sync
@@ -142,7 +132,6 @@ export default function Profile() {
   async function handleSync() {
     if (!ghConfig?.token) return
     setSyncing(true)
-    setSyncFlash(null)
     try {
       const cfg = { token: ghConfig.token, repo: ghConfig.repo }
       const { users: remoteUsers, sha: usersSha } = await fetchUsers(cfg)
@@ -168,12 +157,10 @@ export default function Profile() {
       }
       storage.saveDeletedUserIds([])
       storage.saveGitHubConfig({ ...ghConfig, lastSynced: new Date().toISOString() })
-      setSyncFlash('ok')
-      setSyncVersion((v) => v + 1)  // discard any unsaved form edits
-      setTimeout(() => setSyncFlash(null), 2000)
+      toast.success('Synced with GitHub')
+      setSyncVersion((v) => v + 1)
     } catch {
-      setSyncFlash('err')
-      setTimeout(() => setSyncFlash(null), 3000)
+      toast.error('Sync failed — check your token and connection')
     } finally {
       setSyncing(false)
     }
@@ -197,18 +184,17 @@ export default function Profile() {
             aria-label="Save profile"
             title="Save changes"
           >
-            {saved ? '✓' : <FloppyIcon />}
+            {saved ? <Check size={15} strokeWidth={2.5} /> : <Save size={15} strokeWidth={2} />}
           </button>
           {ghConfig?.token && (
             <button
-              className={`btn-sync${syncing ? ' btn-sync--spin' : ''}${
-                syncFlash === 'ok' ? ' btn-sync--ok' : syncFlash === 'err' ? ' btn-sync--err' : ''
-              }`}
+              className="btn-sync"
               onClick={handleSync}
               disabled={syncing}
               aria-label="Sync to GitHub"
+              style={syncing ? { animation: 'btn-sync-spin 0.7s linear infinite' } : undefined}
             >
-              ↻
+              <RefreshCw size={15} strokeWidth={2.2} />
             </button>
           )}
         </div>

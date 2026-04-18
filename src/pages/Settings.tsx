@@ -1,14 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-
-function FloppyIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-      <polyline points="17,21 17,13 7,13 7,21"/>
-      <polyline points="7,3 7,8 15,8"/>
-    </svg>
-  )
-}
+import { Save, RefreshCw, Check } from 'lucide-react'
+import { toast } from '@/components/ui/Toaster'
 import { useAppStore, selectActiveUser } from '@/store/useAppStore'
 import { storage } from '@/services/storage'
 import {
@@ -57,7 +49,7 @@ export default function Settings() {
   const [importText, setImportText] = useState('')
   const [importResult, setImportResult] = useState<{ added: number; skipped: number } | null>(null)
 
-  // Export
+  // Export (flash replaced by toast — keep state for clipboard copy only)
   const [copyFlash, setCopyFlash] = useState(false)
 
   // Keep form in sync when the store is updated externally (e.g. after a sync).
@@ -236,9 +228,10 @@ export default function Settings() {
         lastSynced: now.toISOString(),
       })
       setLastSynced(now)
-      setSyncVersion((v) => v + 1)  // discard any unsaved form edits
+      setSyncVersion((v) => v + 1)
+      toast.success('Synced with GitHub')
     } catch (err) {
-      setSyncError(err instanceof Error ? err.message : 'Sync failed')
+      toast.error(err instanceof Error ? err.message : 'Sync failed')
     } finally {
       setIsSyncing(false)
     }
@@ -258,7 +251,7 @@ export default function Settings() {
             aria-label="Save settings"
             title="Save settings"
           >
-            {settingsSaved ? '✓' : <FloppyIcon />}
+            {settingsSaved ? <Check size={15} strokeWidth={2.5} /> : <Save size={15} strokeWidth={2} />}
           </button>
           {ghToken.trim() && (
             <button
@@ -266,8 +259,9 @@ export default function Settings() {
               onClick={handleSync}
               disabled={isSyncing || !ghToken.trim() || !ghRepo.trim()}
               aria-label="Sync with GitHub"
+              style={isSyncing ? { animation: 'btn-sync-spin 0.7s linear infinite' } : undefined}
             >
-              {isSyncing ? '…' : '↻'}
+              <RefreshCw size={15} strokeWidth={2.2} />
             </button>
           )}
         </div>
@@ -535,10 +529,7 @@ export default function Settings() {
             {isSyncing ? 'Syncing…' : 'Sync Now'}
           </button>
 
-          {syncError && (
-            <p className="sync-error">{syncError}</p>
-          )}
-          {!syncError && lastSynced && (
+          {lastSynced && (
             <p className="sync-ok">Last synced {formatRelative(lastSynced)}</p>
           )}
         </div>
