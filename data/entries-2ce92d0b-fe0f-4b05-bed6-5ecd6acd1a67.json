@@ -695,5 +695,19 @@
     "weight": 182.8,
     "date": "2026-04-18",
     "createdAt": "2026-04-18T19:25:30.624Z"
+  },
+  {
+    "id": "84cb61a7-6260-4a71-9e2f-d6dce0977f5a",
+    "userId": "2ce92d0b-fe0f-4b05-bed6-5ecd6acd1a67",
+    "weight": 182,
+    "date": "2026-04-19",
+    "createdAt": "2026-04-19T17:34:41.272Z"
+  },
+  {
+    "id": "867bfb7c-b681-4884-9f61-203dbb6f3900",
+    "userId": "2ce92d0b-fe0f-4b05-bed6-5ecd6acd1a67",
+    "weight": 182.4,
+    "date": "2026-04-17",
+    "createdAt": "2026-04-19T17:34:54.353Z"
   }
 ]
