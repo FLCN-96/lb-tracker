@@ -86,7 +86,7 @@ export default function ExpandLog({ userId, unit, onClose }: Props) {
           {/* Drag handle */}
           <div className="mx-auto mt-3 mb-2 h-1.5 w-10 rounded-full" style={{ background: 'var(--color-border)' }} />
 
-          <div className="overflow-y-auto px-4 pb-4">
+          <div className="overflow-y-auto px-4 pt-2 pb-4">
             <Drawer.Title className="sheet-title">Log / Edit Entries</Drawer.Title>
 
             <div className="date-log-grid">
