@@ -185,22 +185,28 @@ html.ios-standalone #root {
   transition: color 0.18s;
   -webkit-tap-highlight-color: transparent;
   position: relative;
+  /* Scope the pill's z-index:-1 so it stays above our own background,
+     not behind the tab-bar's stacking context (z-index:100) */
+  isolation: isolate;
 }
 
 .tab-item--active {
   color: var(--color-primary);
 }
 
-/* Floating pill — rendered as a motion.span with layoutId for animation */
+/* Floating pill — rendered as a motion.span with layoutId for animation.
+   Use left/right:0 + margin:auto instead of translateX(-50%) so Framer
+   Motion's layout transform doesn't fight with our centering offset. */
 .tab-active-pill {
   position: absolute;
   top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   width: 44px;
   height: 32px;
   border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
   z-index: -1;
 }
 
@@ -1529,7 +1535,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-size: 18px;
   font-weight: 800;
   letter-spacing: -0.3px;
-  margin-bottom: var(--space-lg);
+  margin-top: 4px;
+  margin-bottom: var(--space-md);
   color: var(--color-text);
 }
 
@@ -1537,17 +1544,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .date-log-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: var(--space-md);
 }
 
 .date-log-cell {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   background: var(--color-bg-alt);
+  border: 1px solid var(--color-border-light);
   border-radius: var(--radius-sm);
-  padding: 8px 10px;
+  padding: 10px 12px;
 }
 
 .date-log-cell__label {
@@ -1573,7 +1581,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   color: var(--color-text);
   font-size: 15px;
   font-weight: 700;
-  padding: 5px 6px;
+  padding: 7px 6px;
   text-align: center;
   outline: none;
   -webkit-appearance: none;
