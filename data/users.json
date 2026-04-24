@@ -24,31 +24,5 @@
     "startingWeight": 220,
     "goalWeight": 185,
     "createdAt": "2026-03-04T23:11:28.009Z"
-  },
-  {
-    "heightIn": null,
-    "gender": null,
-    "favoriteColor": null,
-    "weekStartDay": 1,
-    "id": "e6a7d582-5ea1-41f3-a4a5-4ee6429579f1",
-    "name": "Bird",
-    "emoji": "🦜",
-    "unit": "lbs",
-    "startingWeight": null,
-    "goalWeight": null,
-    "createdAt": "2026-04-19T17:33:44.359Z"
-  },
-  {
-    "heightIn": null,
-    "gender": null,
-    "favoriteColor": null,
-    "weekStartDay": 1,
-    "id": "a9ec3ae2-ae4a-49a1-9c66-5c4cebe73129",
-    "name": "P",
-    "emoji": "🦝",
-    "unit": "lbs",
-    "startingWeight": null,
-    "goalWeight": null,
-    "createdAt": "2026-04-20T20:07:36.303Z"
   }
 ]
